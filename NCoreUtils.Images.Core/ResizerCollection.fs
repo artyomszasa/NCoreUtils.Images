@@ -1,0 +1,55 @@
+namespace NCoreUtils.Images
+
+open System.Collections
+open System.Collections.Concurrent
+open System.Collections.Generic
+open System.Runtime.InteropServices
+open NCoreUtils
+open NCoreUtils.Images.Internal
+open NCoreUtils.Linq
+open System.Runtime.CompilerServices
+
+
+type
+  [<Sealed>]
+  ResizerCollectionBuilder =
+    val internal collection : ConcurrentDictionary<CaseInsensitive, IResizerFactory>
+    new () = { collection = ConcurrentDictionary () }
+
+    member this.Add (name : string, factory : IResizerFactory) =
+      match this.collection.TryAdd (CaseInsensitive name, factory) with
+      | true -> this
+      | _    -> invalidOpf "Resizer factory has already been registered for %s" name
+
+and
+  [<Sealed>]
+  ResizerCollection =
+    val private collection : Map<CaseInsensitive, IResizerFactory>
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    internal new (builder : ResizerCollectionBuilder) = { collection = builder.collection |> Seq.fold (fun map kv -> Map.add kv.Key kv.Value map) Map.empty }
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member this.TryGetValue name = Map.tryFind (CaseInsensitive name) this.collection
+    member this.TryGetValue (name : string, [<Out>] factory : byref<_>) =
+      match this.TryGetValue name with
+      | Some f ->
+        factory <- f
+        true
+      | _ ->
+        factory <- Unchecked.defaultof<_>
+        false
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member private this.GetEnumerator () = (this.collection :> seq<_>).GetEnumerator().Select(fun kv -> KeyValuePair (kv.Key.ToLowerString (), kv.Value))
+    interface IEnumerable with
+      member this.GetEnumerator () = this.GetEnumerator () :> _
+    interface IReadOnlyDictionary<string, IResizerFactory> with
+      member this.Count   = Map.count this.collection
+      member this.Keys    = this.collection |> Seq.map (fun kv -> kv.Key.ToLowerString ())
+      member this.Values  = this.collection |> Seq.map (fun kv -> kv.Value)
+      member this.Item
+        with get name =
+          match this.TryGetValue name with
+          | Some f -> f
+          | _      -> sprintf "No resizer factory registered for %s" name |> KeyNotFoundException |> raise
+      member this.ContainsKey name = Map.containsKey (CaseInsensitive name) this.collection
+      member this.TryGetValue (name, [<Out>] factory : byref<_>) = this.TryGetValue (name, &factory)
+      member this.GetEnumerator () = this.GetEnumerator ()
