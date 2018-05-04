@@ -20,6 +20,7 @@ type
       match this.collection.TryAdd (CaseInsensitive name, factory) with
       | true -> this
       | _    -> invalidOpf "Resizer factory has already been registered for %s" name
+    member this.Build () = ResizerCollection this
 
 and
   [<Sealed>]

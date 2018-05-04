@@ -34,6 +34,10 @@ type IImageResizer =
   abstract AsyncResize : source:Stream * destination:IImageDestination * options:ResizeOptions -> Async<unit>
   abstract AsyncGetImageInfo : source:Stream -> Async<ImageInfo>
 
+[<Interface>]
+type IImageOptimization =
+  abstract Optimize : data:byte[] -> Async<byte[]>
+
 // C# interop
 
 [<AbstractClass>]

@@ -7,6 +7,7 @@ open System.Runtime.InteropServices
 open NCoreUtils
 open NCoreUtils.Images.Internal
 
+[<Interface>]
 type IImageResizerOptions =
   abstract Quality  : imageType:ImageType -> int
   abstract Optimize : imageType:ImageType -> bool
@@ -109,6 +110,7 @@ type ImageTypeOptimize () = inherit ImageTypeDictionary<bool> (false)
 
 
 [<CLIMutable>]
+[<NoEquality; NoComparison>]
 type ImageResizerOptions = {
   Quality  : ImageTypeQuality
   Optimize : ImageTypeOptimize }

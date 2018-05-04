@@ -15,6 +15,8 @@ type ImageResizerClientConfiguration () =
 
 [<AutoOpen>]
 module private ImageResizerClientHelpers =
+  [<Literal>]
+  let FailedMessage = "Failed to perform resize operation"
 
   let serializerSettings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
 
@@ -56,7 +58,22 @@ module private ImageResizerClientHelpers =
     |> appendn first "cy" options.WeightY
     |> builderToString
 
+  // FIXME: use unified solution
+  let toByteArray (stream : Stream) =
+    match stream with
+    | :? MemoryStream as memoryStream -> memoryStream.ToArray ()
+    | _ ->
+      use memoryStream = new MemoryStream ()
+      stream.CopyTo memoryStream
+      memoryStream.ToArray ()
 
+
+[<Serializable>]
+type ImageResizerClientException =
+  inherit ImageResizerException
+  new (message) = { inherit ImageResizerException (message) }
+  new (message : string, innerException) = { inherit ImageResizerException (message, innerException) }
+  new (info : System.Runtime.Serialization.SerializationInfo, context) = { inherit ImageResizerException (info, context) }
 
 type ImageResizerClient =
   val private configuration : ImageResizerClientConfiguration
@@ -66,46 +83,99 @@ type ImageResizerClient =
       logger        = logger }
   member this.AsyncResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
     let queryString = createQueryString options
-    let rec invoke i =
+    let data = toByteArray source
+    let rec invoke i exns =
       match i = this.configuration.EndPoints.Length with
-      | true -> async.Return false
+      | true -> async.Return (false, [])
       | _    ->
         let endpoint = this.configuration.EndPoints.[i]
         let uri = UriBuilder(endpoint, Query = queryString).Uri;
         async {
-          let! success = async {
-            use requestMessageContent = new StreamContent (source)
-            use requestMessage = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
-            requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
-            use httpClient = new HttpClient ()
-            use! responseMessage = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
-            match responseMessage.StatusCode with
-            | HttpStatusCode.OK ->
-              match responseMessage.Content with
-              | null ->
-                this.logger.LogWarning (null, sprintf "Image server responded with no content (endpoint = %s)." endpoint)
-                return false
-              | content ->
-                let length = content.Headers.ContentLength
-                let ctype  = content.Headers.ContentType |> Option.wrap >>| (fun x -> x.ToString ()) |> Option.defaultValue null
-                do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= (fun sourceStream -> sourceStream.AsyncCopyTo stream))
-                return true
-            | HttpStatusCode.BadRequest ->
-              this.logger.LogWarning (null, "Image server responded with bad request.")
-              return false
-            | HttpStatusCode.NotImplemented ->
-              this.logger.LogWarning (null, "Feature not implmented on image server.");
-              return false
-            | statusCode ->
-              this.logger.LogWarning (null, sprintf "Image server responded with %A." statusCode)
-              return false }
-          match success with
-          | true -> return true
-          | _    -> return! invoke (i + 1)
-        }
+          let! result = async {
+            try
+              use memoryStream = new MemoryStream (data, false)
+              use requestMessageContent = new StreamContent (memoryStream)
+              use requestMessage = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
+              requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+              use httpClient = new HttpClient ()
+              use! responseMessage = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
+              match responseMessage.StatusCode with
+              | HttpStatusCode.OK ->
+                match responseMessage.Content with
+                | null ->
+                  this.logger.LogWarning (null, sprintf "Image server responded with no content (endpoint = %s)." endpoint)
+                  return (false, exns)
+                | content ->
+                  let length = content.Headers.ContentLength
+                  let ctype  = content.Headers.ContentType |> Option.wrap >>| (fun x -> x.ToString ()) |> Option.defaultValue null
+                  do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
+                  return (true, [])
+              | HttpStatusCode.BadRequest ->
+                this.logger.LogWarning (null, "Image server responded with bad request.")
+                return (false, exns)
+              | HttpStatusCode.NotImplemented ->
+                this.logger.LogWarning (null, "Feature not implmented on image server.");
+                return (false, exns)
+              | statusCode ->
+                this.logger.LogWarning (null, sprintf "Image server responded with %A." statusCode)
+                return (false, exns)
+            with exn -> return (false, exn :: exns) }
+          match result with
+          | true, _   -> return  (true, [])
+          | _, errors -> return! invoke (i + 1) errors }
     async {
-      let! success = invoke 0
-      match success with
-      | true -> ()
-      | _    -> failwith "failed" //FIXME: exception + message
-    }
+      let! result = invoke 0 []
+      match result with
+      | true, _ -> ()
+      | _, []   -> ImageResizerClientException  ImageResizerClientHelpers.FailedMessage                           |> raise
+      | _, exns -> ImageResizerClientException (ImageResizerClientHelpers.FailedMessage, AggregateException exns) |> raise }
+  member this.AsyncGetImageInfo (source : Stream) =
+    let data = toByteArray source
+    let rec invoke i exns =
+      match i = this.configuration.EndPoints.Length with
+      | true -> async.Return (None, [])
+      | _    ->
+        let endpoint = this.configuration.EndPoints.[i]
+        let uri = UriBuilder(endpoint, Path = "info").Uri;
+        async {
+          let! result = async {
+            try
+              use memoryStream = new MemoryStream (data, false)
+              use requestMessageContent = new StreamContent (memoryStream)
+              use requestMessage = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
+              requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+              use httpClient = new HttpClient ()
+              use! responseMessage = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
+              match responseMessage.StatusCode with
+              | HttpStatusCode.OK ->
+                match responseMessage.Content with
+                | null ->
+                  this.logger.LogWarning (null, sprintf "Image server responded with no content (endpoint = %s)." endpoint)
+                  return (None, exns)
+                | content ->
+                  let! json = content.AsyncReadAsString ()
+                  let  info = JsonConvert.DeserializeObject<ImageInfo> (json, serializerSettings)
+                  return (Some info, [])
+              | HttpStatusCode.BadRequest ->
+                this.logger.LogWarning (null, "Image server responded with bad request.")
+                return (None, exns)
+              | HttpStatusCode.NotImplemented ->
+                this.logger.LogWarning (null, "Feature not implmented on image server.");
+                return (None, exns)
+              | statusCode ->
+                this.logger.LogWarning (null, sprintf "Image server responded with %A." statusCode)
+                return (None, exns)
+            with exn -> return (None, exn :: exns) }
+          match result with
+          | Some _ as info, _   -> return  (info, [])
+          | _, errors           -> return! invoke (i + 1) errors }
+    async {
+      let! result = invoke 0 []
+      return
+        match result with
+        | Some info, _ -> info
+        | _, []        -> ImageResizerClientException  ImageResizerClientHelpers.FailedMessage                           |> raise
+        | _, exns      -> ImageResizerClientException (ImageResizerClientHelpers.FailedMessage, AggregateException exns) |> raise }
+  interface IImageResizer with
+    member this.AsyncResize (source, destination, options) = this.AsyncResize (source, destination, options)
+    member this.AsyncGetImageInfo source = this.AsyncGetImageInfo source
