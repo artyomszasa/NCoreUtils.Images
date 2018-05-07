@@ -64,7 +64,7 @@ module private ImageHelpers =
     | :? Guid as guid -> guid.ToString ()
     | _ -> null
 
-type ImageProvider private () =
+type ImageProvider () =
   member this.FromStream (stream : Stream) =
     new Image (new MagickImage (stream), this)
   interface IImageProvider with

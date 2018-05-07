@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>False</IsPackable>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Middleware.fs" />
@@ -14,9 +15,22 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.1" />
     <PackageReference Include="NCoreUtils.AspNetCore.KestrelConfiguration" Version="1.0.2" />
     <PackageReference Include="NCoreUtils.AspNetCore.Logging.Google" Version="1.1.1" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="1.0.4" />
     <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.ImageMagick\NCoreUtils.Images.ImageMagick.fsproj" />
   </ItemGroup>
+  <Target Name="DockerBuild">
+    <!-- Ensure properties -->
+    <PropertyGroup>
+      <DockerFile Condition=" '$(DockerFile)' == '' ">Dockerfile</DockerFile>
+      <DockerImageName Condition=" '$(DockerImageName)' ==  '' ">$(AssemblyName.ToLowerInvariant().Replace('.', '-'))</DockerImageName>
+      <DockerImageVersion Condition=" '$(DockerImageVersion)' == '' ">$(Version)</DockerImageVersion>
+      <DockerFilePath>$([MSBuild]::GetPathOfFileAbove($(DockerFile)))</DockerFilePath>
+      <DockerRootPath>$([System.IO.Path]::GetDirectoryName($(DockerFilePath)))</DockerRootPath>
+    </PropertyGroup>
+    <!-- Execute docker -->
+    <Exec Command="docker build -t $(DockerImageName):$(DockerImageVersion) -f $(DockerFilePath) $(DockerRootPath)" />
+  </Target>
 </Project>

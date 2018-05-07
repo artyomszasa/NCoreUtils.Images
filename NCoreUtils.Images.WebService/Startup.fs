@@ -17,8 +17,13 @@ type Startup () =
   member __.ConfigureServices (services: IServiceCollection) =
     let configuration = Config.buildConfig ()
     let imageResizerOptions = configuration.GetSection("Images").Get<ImageResizerOptions>()
-    if box imageResizerOptions |> isNull |> not then
-      services.AddSingleton<IImageResizerOptions> imageResizerOptions |> ignore
+    if box imageResizerOptions |> isNull |> not
+      then
+        services.AddSingleton<IImageResizerOptions> imageResizerOptions |> ignore
+        services.AddSingleton<ImageResizerOptions> imageResizerOptions |> ignore
+      else
+        services.AddSingleton<IImageResizerOptions> ImageResizerOptions.Default |> ignore
+        services.AddSingleton<ImageResizerOptions>  ImageResizerOptions.Default |> ignore
     services
       .AddSingleton<IConfiguration>(configuration)
       .AddLogging(fun b -> b.ClearProviders().SetMinimumLevel(LogLevel.Trace) |> ignore)
