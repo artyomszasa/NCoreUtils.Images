@@ -1,5 +1,6 @@
 namespace NCoreUtils.Images
 
+open System
 open System.Collections
 open System.Collections.Generic
 open System.Collections.ObjectModel
@@ -8,7 +9,9 @@ open NCoreUtils
 open NCoreUtils.Images.Internal
 
 [<Interface>]
+[<AllowNullLiteral>]
 type IImageResizerOptions =
+  abstract MemoryLimit : Nullable<int64> with get, set
   abstract Quality  : imageType:ImageType -> int
   abstract Optimize : imageType:ImageType -> bool
 
@@ -112,11 +115,15 @@ type ImageTypeOptimize () = inherit ImageTypeDictionary<bool> (false)
 [<CLIMutable>]
 [<NoEquality; NoComparison>]
 type ImageResizerOptions = {
-  Quality  : ImageTypeQuality
-  Optimize : ImageTypeOptimize }
+  MemoryLimit : Nullable<int64>
+  Quality     : ImageTypeQuality
+  Optimize    : ImageTypeOptimize }
   with
-    static member Default = { Quality = ImageTypeQuality (); Optimize = ImageTypeOptimize () }
+    static member Default = { Quality = ImageTypeQuality (); Optimize = ImageTypeOptimize (); MemoryLimit = Nullable<int64> (8L * 1024L * 1024L) }
     interface IImageResizerOptions with
+      member this.MemoryLimit
+        with get () = this.MemoryLimit
+        and set (limit : Nullable<int64>) = typeof<ImageResizerOptions>.GetProperty("MemoryLimit").SetValue(this, limit, null)
       member this.Quality imageType =
         match box this.Quality with
         | null -> 85

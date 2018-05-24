@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>False</IsPackable>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Middleware.fs" />
@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.1" />
-    <PackageReference Include="NCoreUtils.AspNetCore.KestrelConfiguration" Version="1.0.2" />
+    <PackageReference Include="NCoreUtils.AspNetCore.KestrelConfiguration" Version="1.0.3" />
     <PackageReference Include="NCoreUtils.AspNetCore.Logging.Google" Version="1.1.1" />
     <PackageReference Include="NCoreUtils.FSharp" Version="1.0.4" />
     <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.0.3" />

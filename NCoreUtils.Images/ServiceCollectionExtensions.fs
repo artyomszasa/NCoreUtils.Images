@@ -13,6 +13,7 @@ type ServiceCollectionNCoreUtilsImagesCoreExtensions =
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   static member AddCoreImageResizer<'TProvider when 'TProvider : not struct and 'TProvider :> IImageProvider> (services : IServiceCollection,
+                                                                                                               serviceLifetime : ServiceLifetime,
                                                                                                                [<Optional; DefaultParameterValue(false)>] suppressDefaultResizers : bool,
                                                                                                                [<Optional; DefaultParameterValue(null:Action<ResizerCollectionBuilder>)>] configure : Action<ResizerCollectionBuilder>) =
     let builder = ResizerCollectionBuilder ()
@@ -27,4 +28,11 @@ type ServiceCollectionNCoreUtilsImagesCoreExtensions =
     services
       .AddSingleton(builder.Build ())
       .AddSingleton<IImageProvider, 'TProvider>()
-      .AddImageResizer<ImageResizer>()
+      .AddImageResizer<ImageResizer>(serviceLifetime)
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member AddCoreImageResizer<'TProvider when 'TProvider : not struct and 'TProvider :> IImageProvider> (services : IServiceCollection,
+                                                                                                               [<Optional; DefaultParameterValue(false)>] suppressDefaultResizers : bool,
+                                                                                                               [<Optional; DefaultParameterValue(null:Action<ResizerCollectionBuilder>)>] configure : Action<ResizerCollectionBuilder>) =
+    services.AddCoreImageResizer<'TProvider>(ServiceLifetime.Transient, suppressDefaultResizers, configure)

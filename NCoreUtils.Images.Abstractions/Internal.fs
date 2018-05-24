@@ -166,6 +166,7 @@ module ImageType =
 type
   [<Interface>]
   IImageProvider =
+    abstract MemoryLimit : int64 with get, set
     abstract AsyncFromStream : stream:Stream -> Async<IImage>
 
 and
@@ -181,14 +182,30 @@ and
     abstract Crop         : rect:Rectangle -> unit
     abstract GetImageInfo : unit -> ImageInfo
 
+type
+  [<Interface>]
+  IDirectImageProvider =
+    inherit IImageProvider
+    abstract AsyncFromPath : path:string -> Async<IImage>
+
+
+type
+  [<Interface>]
+  IDirectImage =
+    inherit IImage
+    abstract AsyncSaveTo : path:string * [<Optional; DefaultParameterValue(85)>] quality:int -> Async<unit>
+
 // C# interop
 
 type
   [<AbstractClass>]
   AsyncImageProvider () =
+    abstract MemoryLimit : int64 with get, set
+
     abstract FromStreamAsync : stream:Stream * [<Optional>] cancellationToken:CancellationToken -> Task<IImage>
     member inline internal this.FromStreamDirect (stream, cancellationToken) = this.FromStreamAsync (stream, cancellationToken)
     interface IImageProvider with
+      member this.MemoryLimit with get () = this.MemoryLimit and set limit = this.MemoryLimit <- limit
       member this.AsyncFromStream stream = Async.Adapt (fun cancellationToken -> this.FromStreamAsync (stream, cancellationToken))
 
 type

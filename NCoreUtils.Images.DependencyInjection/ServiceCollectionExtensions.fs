@@ -3,6 +3,7 @@ namespace NCoreUtils.Images
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
 
 [<Sealed>]
 type internal LoggerAdapter<'T> (logger : ILogger<'T>) =
@@ -17,7 +18,7 @@ type ServiceCollectionNCoreUtilsImagesExtensions =
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  static member AddImageResizer<'TResizer when 'TResizer : not struct and 'TResizer :> IImageResizer>(services : IServiceCollection) =
+  static member AddImageResizer<'TResizer when 'TResizer : not struct and 'TResizer :> IImageResizer>(services : IServiceCollection, [<Optional; DefaultParameterValue(ServiceLifetime.Transient)>] serviceLifetime : ServiceLifetime) =
     services
       .AddTransient(typedefof<ILog<_>>, typedefof<LoggerAdapter<_>>)
-      .AddTransient<IImageResizer, 'TResizer>()
+      .Add(ServiceDescriptor (typeof<IImageResizer>, typeof<'TResizer>, serviceLifetime))

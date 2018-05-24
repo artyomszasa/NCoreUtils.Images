@@ -14,4 +14,4 @@ type ServiceCollectionNCoreUtilsImagesImageMagickExtensions =
   static member AddImageMagickResizer (services : IServiceCollection,
                                        [<Optional; DefaultParameterValue(false)>] suppressDefaultResizers : bool,
                                        [<Optional; DefaultParameterValue(null:Action<ResizerCollectionBuilder>)>] configure : Action<ResizerCollectionBuilder>) =
-    services.AddCoreImageResizer<ImageMagick.ImageProvider>(suppressDefaultResizers, configure)
+    services.AddCoreImageResizer<ImageMagick.ImageProvider>(ServiceLifetime.Singleton, suppressDefaultResizers, configure)

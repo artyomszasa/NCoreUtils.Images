@@ -31,6 +31,7 @@ type IImageDestination =
 
 [<Interface>]
 type IImageResizer =
+  abstract AsyncResize : source:string * destination:IImageDestination * options:ResizeOptions -> Async<unit>
   abstract AsyncResize : source:Stream * destination:IImageDestination * options:ResizeOptions -> Async<unit>
   abstract AsyncGetImageInfo : source:Stream -> Async<ImageInfo>
 
@@ -51,12 +52,14 @@ type AsyncImageDestination () =
 
 [<AbstractClass>]
 type AsyncImageResizer () =
+  abstract ResizeAsync : source:string * destination:IImageDestination * options:ResizeOptions * cancellationToken:CancellationToken -> Task
   abstract ResizeAsync : source:Stream * destination:IImageDestination * options:ResizeOptions * cancellationToken:CancellationToken -> Task
   abstract GetImageInfoAsync : source:Stream * cancellationToken:CancellationToken -> Task<ImageInfo>
-  member inline internal this.ResizeDirect (source, destination, options, cancellationToken) = this.ResizeAsync (source, destination, options, cancellationToken)
+  member inline internal this.ResizeDirect (source : Stream, destination, options, cancellationToken) = this.ResizeAsync (source, destination, options, cancellationToken)
   member inline internal this.GetImageInfoDirect (source, cancellationToken) = this.GetImageInfoAsync (source, cancellationToken)
   interface IImageResizer with
-    member this.AsyncResize (source, destination, options) = Async.Adapt (fun cancellationToken -> this.ResizeAsync (source, destination, options, cancellationToken))
+    member this.AsyncResize (source : string, destination, options) = Async.Adapt (fun cancellationToken -> this.ResizeAsync (source, destination, options, cancellationToken))
+    member this.AsyncResize (source : Stream, destination, options) = Async.Adapt (fun cancellationToken -> this.ResizeAsync (source, destination, options, cancellationToken))
     member this.AsyncGetImageInfo source = Async.Adapt (fun cancellationToken -> this.GetImageInfoAsync (source, cancellationToken))
 
 [<Extension>]
@@ -87,7 +90,7 @@ module ImageResizerExt =
 
   type IImageResizer with
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-    member this.AsyncResize (source, destinationStream : Stream, options) = this.AsyncResize (source, StreamDestination destinationStream, options)
+    member this.AsyncResize (source : Stream, destinationStream : Stream, options) = this.AsyncResize (source, StreamDestination destinationStream, options)
 
 [<Extension>]
 [<Sealed; AbstractClass>]
@@ -95,7 +98,7 @@ type ImageResizerExtensions =
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  static member Resize (this : IImageResizer, source, destination : IImageDestination, options) =
+  static member Resize (this : IImageResizer, source : Stream, destination : IImageDestination, options) =
     this.AsyncResize (source, destination, options) |> Async.RunSynchronously
 
   [<Extension>]

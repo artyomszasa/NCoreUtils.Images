@@ -68,7 +68,16 @@ type ImageProvider () =
   member this.FromStream (stream : Stream) =
     new Image (new MagickImage (stream), this)
   interface IImageProvider with
+    member __.MemoryLimit
+      with get ()    = int64 ResourceLimits.Memory
+      and  set limit =
+        ResourceLimits.Memory <- uint64 limit
+        printfn "ResourceLimits.Memory = %d" ResourceLimits.Memory
+        printfn "ResourceLimits.Disk = %d" ResourceLimits.Disk
+        printfn "ResourceLimits.Thread = %d" ResourceLimits.Thread
     member this.AsyncFromStream stream = this.FromStream stream :> IImage |> async.Return
+  interface IDirectImageProvider with
+    member this.AsyncFromPath path = new Image (new MagickImage (path), this) :> IImage |> async.Return
 
 and
   [<Sealed>]
@@ -154,3 +163,13 @@ and
       member this.Dispose () =
         if 0 = Interlocked.CompareExchange (&this.isDisposed, 1, 0) then
           this.native.Dispose ()
+    interface IDirectImage with
+      member this.AsyncSaveTo (path, quality) =
+        Async.FromContinuations
+          (fun (succ, err, _) ->
+            try
+              this.native.Quality <- quality
+              this.native.Write (path)
+              succ ()
+            with exn -> err exn
+          )

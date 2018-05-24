@@ -1,10 +1,14 @@
 namespace NCoreUtils.Images.WebService
 
+// open System
+open System.IO
+// open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.DependencyInjection
 open NCoreUtils.Images
+open Microsoft.Extensions.Primitives
 
 module internal Middleware =
 
@@ -16,9 +20,18 @@ module internal Middleware =
           | null -> "application/octet-stream"
           | ct   -> ct
         match info.ContentLength with
-        | Nullable.Value _ as contentLength -> response.ContentLength <- contentLength
-        | _                                 -> ()
-        generator response.Body
+        | Nullable.Value _ as contentLength ->
+          response.ContentLength <- contentLength
+          generator response.Body
+        | _ -> async {
+          use buffer = new FileStream (Path.GetTempFileName (), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 65536, FileOptions.Asynchronous ||| FileOptions.DeleteOnClose)
+          do! generator buffer
+          buffer.Seek (0L, SeekOrigin.Begin) |> ignore
+          response.ContentLength <- Nullable.mk buffer.Length
+          do! buffer.AsyncCopyTo (response.Body, 65536)
+          do! response.Body.AsyncFlush () }
+
+
 
   let inline private (|CI|_|) (comparand : string) (value : CaseInsensitive) =
     match CaseInsensitive comparand = value with
@@ -49,11 +62,25 @@ module internal Middleware =
     |> imageResizer.AsyncGetImageInfo
     |> json httpContext
 
-  let resize httpContext (imageResizer : IImageResizer) =
+  let resize httpContext (imageResizer : IImageResizer) = async {
     let options = (HttpContext.request httpContext).Query |> readParameters
-    let source  = HttpContext.requestBody httpContext
-    let dest    = HttpContext.response httpContext |> HttpResponseDestination
-    imageResizer.AsyncResize (source, dest, options)
+
+    let tmp = Path.GetTempFileName ()
+    try
+      do! async {
+        use source  = HttpContext.requestBody httpContext
+        let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
+        do! source.AsyncCopyTo (buffer, 65536)
+        do! buffer.AsyncFlush () }
+      // use! buffer = async {
+      //   use source  = HttpContext.requestBody httpContext
+      //   let buffer  = new FileStream (Path.GetTempFileName (), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 65536, FileOptions.Asynchronous ||| FileOptions.DeleteOnClose)
+      //   do! source.AsyncCopyTo (buffer, 65536)
+      //   buffer.Seek (0L, SeekOrigin.Begin) |> ignore
+      //   return buffer }
+      let dest    = HttpContext.response httpContext |> HttpResponseDestination
+      do! imageResizer.AsyncResize (tmp, dest, options)
+    finally try if File.Exists tmp then File.Delete tmp with _ -> () }
 
   let inline private async405 httpContext =
     HttpContext.setResponseStatusCode 405 httpContext
