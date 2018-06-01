@@ -89,7 +89,7 @@ type ImageResizerClient =
       | true -> async.Return (false, [])
       | _    ->
         let endpoint = this.configuration.EndPoints.[i]
-        let uri = UriBuilder(endpoint, Query = queryString).Uri;
+        let uri = UriBuilder(endpoint, Query = queryString).Uri
         async {
           let! result = async {
             try
@@ -103,7 +103,7 @@ type ImageResizerClient =
               | HttpStatusCode.OK ->
                 match responseMessage.Content with
                 | null ->
-                  this.logger.LogWarning (null, sprintf "Image server responded with no content (endpoint = %s)." endpoint)
+                  this.logger.LogWarning (null, sprintf "Image server responded with no content (uri = %s)." uri.AbsoluteUri)
                   return (false, exns)
                 | content ->
                   let length = content.Headers.ContentLength
@@ -111,15 +111,17 @@ type ImageResizerClient =
                   do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
                   return (true, [])
               | HttpStatusCode.BadRequest ->
-                this.logger.LogWarning (null, "Image server responded with bad request.")
+                this.logger.LogWarning (null, sprintf "Image server responded with bad request (uri = %s)." uri.AbsoluteUri)
                 return (false, exns)
               | HttpStatusCode.NotImplemented ->
-                this.logger.LogWarning (null, "Feature not implmented on image server.");
+                this.logger.LogWarning (null, sprintf "Feature not implmented on image server (uri = %s)." uri.AbsoluteUri);
                 return (false, exns)
               | statusCode ->
-                this.logger.LogWarning (null, sprintf "Image server responded with %A." statusCode)
+                this.logger.LogWarning (null, sprintf "Image server responded with %A (uri = %s)." statusCode uri.AbsoluteUri)
                 return (false, exns)
-            with exn -> return (false, exn :: exns) }
+            with exn ->
+              this.logger.LogError (exn, sprintf "Exception thrown while resizing image (uri = %s)." uri.AbsoluteUri)
+              return (false, exn :: exns) }
           match result with
           | true, _   -> return  (true, [])
           | _, errors -> return! invoke (i + 1) errors }
@@ -136,7 +138,9 @@ type ImageResizerClient =
       | true -> async.Return (None, [])
       | _    ->
         let endpoint = this.configuration.EndPoints.[i]
-        let uri = UriBuilder(endpoint, Path = "info").Uri;
+        let uriBuilder = UriBuilder endpoint;
+        uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "info" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "info" else uriBuilder.Path + "/info")
+        let uri = uriBuilder.Uri
         async {
           let! result = async {
             try
@@ -150,22 +154,25 @@ type ImageResizerClient =
               | HttpStatusCode.OK ->
                 match responseMessage.Content with
                 | null ->
-                  this.logger.LogWarning (null, sprintf "Image server responded with no content (endpoint = %s)." endpoint)
+                  this.logger.LogWarning (null, sprintf "Image server responded with no content (uri = %s)." uri.AbsoluteUri)
                   return (None, exns)
                 | content ->
                   let! json = content.AsyncReadAsString ()
+                  this.logger.LogDebug (null, sprintf "Got JSON reponse (uri = %s): %s" uri.AbsoluteUri json)
                   let  info = JsonConvert.DeserializeObject<ImageInfo> (json, serializerSettings)
                   return (Some info, [])
               | HttpStatusCode.BadRequest ->
-                this.logger.LogWarning (null, "Image server responded with bad request.")
+                this.logger.LogWarning (null, sprintf "Image server responded with bad request (uri = %s)." uri.AbsoluteUri)
                 return (None, exns)
               | HttpStatusCode.NotImplemented ->
-                this.logger.LogWarning (null, "Feature not implmented on image server.");
+                this.logger.LogWarning (null, sprintf "Feature not implmented on image server (uri = %s)." uri.AbsoluteUri);
                 return (None, exns)
               | statusCode ->
-                this.logger.LogWarning (null, sprintf "Image server responded with %A." statusCode)
+                this.logger.LogWarning (null, sprintf "Image server responded with %A (uri = %s)." statusCode uri.AbsoluteUri)
                 return (None, exns)
-            with exn -> return (None, exn :: exns) }
+            with exn ->
+              this.logger.LogError (exn, sprintf "Exception thrown while getting image information (uri = %s)." uri.AbsoluteUri)
+              return (None, exn :: exns) }
           match result with
           | Some _ as info, _   -> return  (info, [])
           | _, errors           -> return! invoke (i + 1) errors }
@@ -178,4 +185,7 @@ type ImageResizerClient =
         | _, exns      -> ImageResizerClientException (ImageResizerClientHelpers.FailedMessage, AggregateException exns) |> raise }
   interface IImageResizer with
     member this.AsyncResize (source, destination, options) = this.AsyncResize (source, destination, options)
+    member this.AsyncResize (path : string, destination, options) = async {
+      use buffer = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous ||| FileOptions.SequentialScan)
+      do! this.AsyncResize (buffer, destination, options) }
     member this.AsyncGetImageInfo source = this.AsyncGetImageInfo source

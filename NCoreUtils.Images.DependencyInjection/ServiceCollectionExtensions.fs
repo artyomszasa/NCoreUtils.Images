@@ -22,3 +22,4 @@ type ServiceCollectionNCoreUtilsImagesExtensions =
     services
       .AddTransient(typedefof<ILog<_>>, typedefof<LoggerAdapter<_>>)
       .Add(ServiceDescriptor (typeof<IImageResizer>, typeof<'TResizer>, serviceLifetime))
+    services

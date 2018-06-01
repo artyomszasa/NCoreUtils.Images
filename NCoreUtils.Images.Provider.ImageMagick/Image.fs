@@ -123,8 +123,8 @@ and
           | null -> ()
           | v ->
             let tag = value.Tag.ToString ()
-            if not (iptcBuilder.ContainsKey tag) then
-              iptcBuilder.Add (tag, v)
+            if not (exifBuilder.ContainsKey tag) then
+              exifBuilder.Add (tag, v)
       let struct (xResolution, yResolution) =
         let density = this.native.Density
         match density.Units with

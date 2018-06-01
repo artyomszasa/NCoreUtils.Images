@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -18,7 +18,7 @@
     <PackageReference Include="Magick.NET-Q16-x64" Version="7.0.7.900" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
-    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup>

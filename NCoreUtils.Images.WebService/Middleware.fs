@@ -60,7 +60,7 @@ module internal Middleware =
   let info httpContext (imageResizer : IImageResizer) =
     HttpContext.requestBody httpContext
     |> imageResizer.AsyncGetImageInfo
-    |> json httpContext
+    >>= json httpContext
 
   let resize httpContext (imageResizer : IImageResizer) = async {
     let options = (HttpContext.request httpContext).Query |> readParameters

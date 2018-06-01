@@ -118,6 +118,7 @@ type ImageResizer =
     this.logger.LogDebug (null, "Getting image information.")
     use! image = this.provider.AsyncFromStream stream
     let info = image.GetImageInfo ()
+    printfn "%A" info
     this.logger.LogDebug (null, "Successfully retrieved image information.")
     return info }
   member this.AsyncResize (source : string, destination : IImageDestination, options : ResizeOptions) =
