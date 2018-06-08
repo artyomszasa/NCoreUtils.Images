@@ -9,15 +9,13 @@ open System.IO
 
 module private InvalidResizeModeExceptionHelpers =
   [<Literal>]
-  let DefaultMessage = "Invalid or unsupported resize mode."
-  [<Literal>]
   let KeyMode = "ResizeMode"
 
 type InvalidResizeModeException =
   inherit ImageResizerException
   val private mode : string
   new (mode : string) =
-    { inherit ImageResizerException (InvalidResizeModeExceptionHelpers.DefaultMessage)
+    { inherit ImageResizerException (ImageResizerError.invalidMode mode)
       mode = mode }
   new (info : SerializationInfo, context) =
     { inherit ImageResizerException (info, context)
@@ -29,16 +27,14 @@ type InvalidResizeModeException =
 
 module private InvalidImageTypeExceptionHelpers =
   [<Literal>]
-  let DefaultMessage = "Invalid or unsupported imageType."
-  [<Literal>]
   let KeyImageType = "ImageType"
 
 type InvalidImageTypeException =
   inherit ImageResizerException
   val private imageType : string
-  new (mode : string) =
-    { inherit ImageResizerException (InvalidImageTypeExceptionHelpers.DefaultMessage)
-      imageType = mode }
+  new (imageType : string) =
+    { inherit ImageResizerException (ImageResizerError.invalidImageType imageType)
+      imageType = imageType }
   new (info : SerializationInfo, context) =
     { inherit ImageResizerException (info, context)
       imageType = info.GetString InvalidImageTypeExceptionHelpers.KeyImageType }

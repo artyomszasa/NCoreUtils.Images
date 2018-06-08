@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ErrorSerializer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+
+</Project>

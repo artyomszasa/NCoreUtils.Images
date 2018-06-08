@@ -8,7 +8,6 @@ open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.DependencyInjection
 open NCoreUtils.Images
-open Microsoft.Extensions.Primitives
 
 module internal Middleware =
 
@@ -67,11 +66,16 @@ module internal Middleware =
 
     let tmp = Path.GetTempFileName ()
     try
+      let inputSize = ref 0L
       do! async {
         use source  = HttpContext.requestBody httpContext
         let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
         do! source.AsyncCopyTo (buffer, 65536)
-        do! buffer.AsyncFlush () }
+        do! buffer.AsyncFlush ()
+        inputSize := buffer.Length }
+      match !inputSize with
+      | 0L ->
+        HttpContext.setResponseStatusCode 400
       // use! buffer = async {
       //   use source  = HttpContext.requestBody httpContext
       //   let buffer  = new FileStream (Path.GetTempFileName (), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 65536, FileOptions.Asynchronous ||| FileOptions.DeleteOnClose)

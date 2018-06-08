@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.WebService.Shared\NCoreUtils.Images.WebService.Shared.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />

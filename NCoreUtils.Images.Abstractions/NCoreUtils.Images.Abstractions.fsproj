@@ -12,6 +12,7 @@
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Data.fs" />
     <Compile Include="Contract.fs" />
     <Compile Include="Internal.fs" />
