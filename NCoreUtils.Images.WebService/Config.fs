@@ -50,7 +50,9 @@ let private vars =
   [ vx "GOOGLE_PROJECTID"   "Google:ProjectId"         None         (Some (fun () -> getGoogleMetadata "http://metadata.google.internal/computeMetadata/v1/project/project-id"))
     vx "GOOGLE_SERVICENAME" "Google:ServiceName"       None          None
     vx "QUALITY_DEFAULT"    "Images:Quality:Default"  (Some "85")    None
-    vx "OPTIMIZE_DEFAULT"   "Images:Optimize:Default" (Some "false") None ]
+    vx "OPTIMIZE_DEFAULT"   "Images:Optimize:Default" (Some "false") None
+    vx "MEMORY_LIMIT"       "Images:MemoryLimit"       None          None
+    vx "MAX_CONCURRENT_OPS" "Images:MaxConcurrentOps" (Some "20")    None ]
 
 let buildConfigFromEnv () =
   let map =
@@ -89,6 +91,7 @@ let buildConfigFromJson () =
   ConfigurationBuilder()
     .SetBasePath(System.IO.Directory.GetCurrentDirectory ())
     .AddJsonFile("appsettings.json", reloadOnChange = false, optional = true)
+    .AddJsonFile("secrets/appsettings.json", reloadOnChange = false, optional = true)
     .Build ()
 
 let buildConfig () =

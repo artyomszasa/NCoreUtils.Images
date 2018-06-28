@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>1.1.0</Version>
+    <Version>1.1.3</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -12,6 +12,7 @@
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Data.fs" />
     <Compile Include="Contract.fs" />
     <Compile Include="Internal.fs" />
@@ -19,7 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="1.0.1" />
-    <PackageReference Include="NCoreUtils.FSharp" Version="1.1.1" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="1.1.3" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
   </ItemGroup>
 

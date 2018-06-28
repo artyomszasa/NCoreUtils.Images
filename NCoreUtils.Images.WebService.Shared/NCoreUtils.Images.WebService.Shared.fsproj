@@ -12,15 +12,17 @@
     <EnableFrameworkPathOverride Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">true</EnableFrameworkPathOverride>
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="ResizerCollection.fs" />
-    <Compile Include="ImageResizerOptions.fs" />
-    <Compile Include="ImageResizer.fs" />
+    <Compile Include="ErrorSerializer.fs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
+
 </Project>

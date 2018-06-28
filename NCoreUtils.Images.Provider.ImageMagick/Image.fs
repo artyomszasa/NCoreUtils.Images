@@ -100,23 +100,30 @@ and
     member this.Size with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.size
     member this.ImageType with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.imageType
     member this.WriteTo (stream : Stream, imageType : ImageType, quality) =
+      this.ThrowIfDisposed ()
       this.native.Quality <- quality
       this.native.Write(stream, imageTypeToMagickFormat imageType)
     member this.SaveTo (path : string, imageType, quality) =
+      this.ThrowIfDisposed ()
       use stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.None)
       this.WriteTo (stream, imageType, quality)
-    member this.Resize size = this.native.Resize (size.Width, size.Height)
-    member this.Crop (rect : Rectangle) = this.native.Crop (rect.X, rect.Y, rect.Width, rect.Height)
+    member this.Resize size =
+      this.ThrowIfDisposed ()
+      this.native.Resize (size.Width, size.Height)
+    member this.Crop (rect : Rectangle) =
+      this.ThrowIfDisposed ()
+      this.native.Crop (rect.X, rect.Y, rect.Width, rect.Height)
     member this.GetImageInfo () : ImageInfo =
+      this.ThrowIfDisposed ()
+      let iptc = this.native.GetIptcProfile ()
+      let exif = this.native.GetExifProfile ()
       let iptcBuilder = ImmutableDictionary.CreateBuilder ()
       let exifBuilder = ImmutableDictionary.CreateBuilder ()
-      let iptc = this.native.GetIptcProfile ()
       if not (isNull iptc) then
         for value in iptc.Values do
           let tag = value.Tag.ToString ()
           if not (iptcBuilder.ContainsKey tag) then
             iptcBuilder.Add (tag, value.Value)
-      let exif = this.native.GetExifProfile ()
       if not (isNull exif) then
         for value in exif.Values do
           match stringify value.Value with

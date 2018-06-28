@@ -9,16 +9,91 @@ open System.Text
 open NCoreUtils
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
+open System.Runtime.ExceptionServices
+
+type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
+type private SerializationException = System.Runtime.Serialization.SerializationException
 
 type ImageResizerClientConfiguration () =
   member val EndPoints = Array.empty<string> with get, set
 
+[<Serializable>]
+type RemoteImageResizerError internal (message : string, description : string, uri : string) =
+  inherit ImageResizerError (message, description)
+  member val Uri = uri
+  override this.RaiseException () = RemoteImageResizerException this |> raise
+
+and
+  [<Serializable>]
+  RemoteImageResizerStatusCodeError internal (message : string, description : string, uri : string, statusCode : int) =
+    inherit RemoteImageResizerError (message, description, uri)
+    member val StatusCode = statusCode
+    override this.RaiseException () = RemoteImageResizerStatusCodeException this |> raise
+
+and
+  [<Serializable>]
+  RemoteImageResizerClrError internal (message : string, description : string, uri : string, innerException : exn) =
+    inherit RemoteImageResizerError (message, description, uri)
+    member val InnerException = innerException
+    override this.RaiseException () = RemoteImageResizerException (this, this.InnerException) |> raise
+
+and
+  [<Serializable>]
+  RemoteImageResizerException =
+    inherit ImageResizerException
+    new (error : RemoteImageResizerError) = { inherit ImageResizerException (error) }
+    new (error : RemoteImageResizerError, innerException) = { inherit ImageResizerException (error, innerException) }
+    new (info : SerializationInfo, context) = { inherit ImageResizerException (info, context) }
+    member this.RequestUri = (this.Error :?> RemoteImageResizerError).Uri
+
+and
+  [<Serializable>]
+  RemoteImageResizerStatusCodeException =
+    inherit RemoteImageResizerException
+    new (error : RemoteImageResizerStatusCodeError) = { inherit RemoteImageResizerException (error) }
+    new (error : RemoteImageResizerStatusCodeError, innerException) = { inherit RemoteImageResizerException (error, innerException) }
+    new (info : SerializationInfo, context) = { inherit RemoteImageResizerException (info, context) }
+    member this.StatusCode = (this.Error :?> RemoteImageResizerStatusCodeError).StatusCode
+
 [<AutoOpen>]
 module private ImageResizerClientHelpers =
-  [<Literal>]
-  let FailedMessage = "Failed to perform resize operation"
+  let genericRemoteError uri statusCode =
+    RemoteImageResizerStatusCodeError (
+      message     = sprintf "Server responded with %d (uri = %s)." statusCode uri,
+      description = "Failed to perform remote image resize operation due to unknown error.",
+      uri         = uri,
+      statusCode  = statusCode)
 
-  let serializerSettings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
+  let clrRemoteError uri (exn : exn) =
+    RemoteImageResizerClrError (
+      message        = sprintf "Exception has been raised while performing operation (uri = %s)." uri,
+      description    = exn.Message,
+      uri            = uri,
+      innerException = exn)
+
+  let emptyResponseError uri =
+    RemoteImageResizerError (
+      message     = sprintf "Empty response (uri = %s)." uri,
+      description = "Remote server reported no errors but sent no data.",
+      uri         = uri)
+
+  let invalidResponseError uri =
+    RemoteImageResizerError (
+      message     = sprintf "Invalid response (uri = %s)." uri,
+      description = "Remote server reported no errors but sent invalid data.",
+      uri         = uri)
+
+  let noEndpointsError =
+    ImageResizerError (
+      message = "No endpoints provided.",
+      description = "No endpoints provided in current configuration.")
+
+  let infoSerializerSettings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
+
+  let errorSerializerSettings =
+    let settings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
+    settings.Converters.Insert (0, ImageResizerErrorConverter ())
+    settings
 
   let inline private appends first (name : string) (value : string) (builder : StringBuilder) =
     match isNull value with
@@ -67,13 +142,62 @@ module private ImageResizerClientHelpers =
       stream.CopyTo memoryStream
       memoryStream.ToArray ()
 
+  [<Struct>]
+  type ResponseInfo =
+    | Succeeded
+    | Failed
+    | FailedWithError of Error:ImageResizerError
 
-[<Serializable>]
-type ImageResizerClientException =
-  inherit ImageResizerException
-  new (message) = { inherit ImageResizerException (message) }
-  new (message : string, innerException) = { inherit ImageResizerException (message, innerException) }
-  new (info : System.Runtime.Serialization.SerializationInfo, context) = { inherit ImageResizerException (info, context) }
+  let asyncCheck (resp : HttpResponseMessage) =
+    match resp.StatusCode with
+    | HttpStatusCode.OK -> async.Return Succeeded
+    | HttpStatusCode.BadRequest ->
+      match resp.Content with
+      | null -> async.Return Failed
+      | content ->
+      match content.Headers.ContentType with
+      | null -> async.Return Failed
+      | contentType ->
+      match contentType.MediaType with
+      | EQI "application/json"
+      | EQI "text/json" ->
+        async {
+          try
+            let! json  = content.AsyncReadAsString ()
+            let  error = JsonConvert.DeserializeObject<ImageResizerError> (json, errorSerializerSettings)
+            return
+              match box error with
+              | null -> Failed
+              | _    -> FailedWithError error
+          with _ -> return Failed }
+      | _ -> async.Return Failed
+    | _ -> async.Return Failed
+
+  let inline getResult res =
+    match res with
+    | Ok res -> res
+    | Error (error : ImageResizerError) -> error.RaiseException ()
+
+// [<CompiledName("ImageResizerClientError")>]
+// module ImageResizerClientError =
+//
+//   [<CompiledName("RemoteError")>]
+//   let remoteError =
+//     { Error = "Remote resize operation failed."
+//       ErrorDescription = "Image resizer client was unable to perform operation due to remote error." }
+//
+// [<Serializable>]
+// type ImageResizerClientException =
+//   inherit ImageResizerException
+//   new () = { inherit ImageResizerException (ImageResizerClientError.remoteError)}
+//   new (message) = { inherit ImageResizerException (ImageResizerClientError.remoteError, message) }
+//   new (message : string, innerException) = { inherit ImageResizerException (ImageResizerClientError.remoteError, message, innerException) }
+//   new (info : System.Runtime.Serialization.SerializationInfo, context) = { inherit ImageResizerException (info, context) }
+
+[<Struct>]
+type private ErrorDesc =
+  | TryNext of LastError:ImageResizerError
+  | StopWithError of Error:ImageResizerError
 
 type ImageResizerClient =
   val private configuration : ImageResizerClientConfiguration
@@ -81,111 +205,130 @@ type ImageResizerClient =
   new (configuration, logger : ILog<ImageResizerClient>) =
     { configuration = configuration
       logger        = logger }
-  member this.AsyncResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
+
+  member private __.AsyncResInvokeResize (data : byte[], destination : IImageDestination, queryString : string, endpoint : string) = async {
+    let uri = UriBuilder(endpoint, Query = queryString).Uri
+    try
+      use  memoryStream          = new MemoryStream (data, false)
+      use  requestMessageContent = new StreamContent (memoryStream)
+      use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
+      requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+      use  httpClient            = new HttpClient ()
+      use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
+      let! status                = asyncCheck responseMessage
+      match status with
+      | Succeeded ->
+        match responseMessage.Content with
+        | null ->
+          let error = emptyResponseError uri.AbsoluteUri
+          return Error (TryNext error)
+        | content ->
+          let length = content.Headers.ContentLength
+          let ctype  = content.Headers.ContentType |> Option.wrap >>| (fun x -> x.ToString ()) |> Option.defaultValue null
+          do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
+          return Ok ()
+      | FailedWithError error ->
+        return
+          match error with
+          | :? InvalidArgumentError -> Error (StopWithError error)
+          | _                       -> Error (TryNext error)
+      | _ ->
+        return Error (TryNext (genericRemoteError uri.AbsoluteUri (int responseMessage.StatusCode)))
+    with exn -> return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
+
+  member private this.AsyncResInvokeGetInfo (data : byte[], endpoint : string) = async {
+    let uriBuilder = UriBuilder endpoint;
+    uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "info" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "info" else uriBuilder.Path + "/info")
+    let uri = uriBuilder.Uri
+    try
+      use  memoryStream          = new MemoryStream (data, false)
+      use  requestMessageContent = new StreamContent (memoryStream)
+      use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
+      requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+      use  httpClient            = new HttpClient ()
+      use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
+      let! status                = asyncCheck responseMessage
+      match status with
+      | Succeeded ->
+        match responseMessage.Content with
+        | null ->
+          let error = emptyResponseError uri.AbsoluteUri
+          return Error (TryNext error)
+        | content ->
+          let! json = content.AsyncReadAsString ()
+          let res =
+            try
+              this.logger.LogDebug (null, sprintf "Got JSON reponse (uri = %s): %s" uri.AbsoluteUri json)
+              let  info = JsonConvert.DeserializeObject<ImageInfo> (json, infoSerializerSettings)
+              Ok info
+            with
+              | :? SerializationException as exn ->
+                this.logger.LogDebug (exn, sprintf "Failed to deserialize JSON response (uri = %s)." uri.AbsoluteUri)
+                Error (TryNext (invalidResponseError uri.AbsoluteUri))
+              | exn ->
+                ExceptionDispatchInfo.Capture(exn).Throw ()
+                Unchecked.defaultof<_>
+          return res
+      | FailedWithError error ->
+        return
+          match error with
+          | :? InvalidArgumentError -> Error (StopWithError error)
+          | _                       -> Error (TryNext error)
+      | _ ->
+        return Error (TryNext (genericRemoteError uri.AbsoluteUri (int responseMessage.StatusCode)))
+    with exn -> return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
+
+
+  member this.AsyncResResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
     let queryString = createQueryString options
     let data = toByteArray source
-    let rec invoke i exns =
-      match i = this.configuration.EndPoints.Length with
-      | true -> async.Return (false, [])
-      | _    ->
-        let endpoint = this.configuration.EndPoints.[i]
-        let uri = UriBuilder(endpoint, Query = queryString).Uri
-        async {
-          let! result = async {
-            try
-              use memoryStream = new MemoryStream (data, false)
-              use requestMessageContent = new StreamContent (memoryStream)
-              use requestMessage = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
-              requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
-              use httpClient = new HttpClient ()
-              use! responseMessage = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
-              match responseMessage.StatusCode with
-              | HttpStatusCode.OK ->
-                match responseMessage.Content with
-                | null ->
-                  this.logger.LogWarning (null, sprintf "Image server responded with no content (uri = %s)." uri.AbsoluteUri)
-                  return (false, exns)
-                | content ->
-                  let length = content.Headers.ContentLength
-                  let ctype  = content.Headers.ContentType |> Option.wrap >>| (fun x -> x.ToString ()) |> Option.defaultValue null
-                  do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
-                  return (true, [])
-              | HttpStatusCode.BadRequest ->
-                this.logger.LogWarning (null, sprintf "Image server responded with bad request (uri = %s)." uri.AbsoluteUri)
-                return (false, exns)
-              | HttpStatusCode.NotImplemented ->
-                this.logger.LogWarning (null, sprintf "Feature not implmented on image server (uri = %s)." uri.AbsoluteUri);
-                return (false, exns)
-              | statusCode ->
-                this.logger.LogWarning (null, sprintf "Image server responded with %A (uri = %s)." statusCode uri.AbsoluteUri)
-                return (false, exns)
-            with exn ->
-              this.logger.LogError (exn, sprintf "Exception thrown while resizing image (uri = %s)." uri.AbsoluteUri)
-              return (false, exn :: exns) }
-          match result with
-          | true, _   -> return  (true, [])
-          | _, errors -> return! invoke (i + 1) errors }
-    async {
-      let! result = invoke 0 []
-      match result with
-      | true, _ -> ()
-      | _, []   -> ImageResizerClientException  ImageResizerClientHelpers.FailedMessage                           |> raise
-      | _, exns -> ImageResizerClientException (ImageResizerClientHelpers.FailedMessage, AggregateException exns) |> raise }
-  member this.AsyncGetImageInfo (source : Stream) =
+    let rec doInvoke lastErr endpoints = async {
+      match endpoints with
+      | [] -> return lastErr |> Option.defaultValue noEndpointsError |> Error
+      | e::es ->
+        let! res = this.AsyncResInvokeResize (data, destination, queryString, e)
+        match res with
+        | Ok () -> return Ok ()
+        | Error (TryNext err) ->
+          this.logger.LogWarning (null, err.Description)
+          return! doInvoke (Some err) es
+        | Error (StopWithError err) -> return Error err }
+    doInvoke None (List.ofArray this.configuration.EndPoints)
+
+  member this.AsyncResResize (source : string, destination, options) = async {
+    use stream = new FileStream (source, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous ||| FileOptions.SequentialScan)
+    return! this.AsyncResResize (stream, destination, options) }
+
+  member this.AsyncResize (source : Stream, destination, options) =
+    this.AsyncResResize (source, destination, options)
+    >>| getResult
+
+  member this.AsyncResize (source : string, destination, options) =
+    this.AsyncResResize (source, destination, options)
+    >>| getResult
+
+  member this.AsyncResGetImageInfo (source : Stream) =
     let data = toByteArray source
-    let rec invoke i exns =
-      match i = this.configuration.EndPoints.Length with
-      | true -> async.Return (None, [])
-      | _    ->
-        let endpoint = this.configuration.EndPoints.[i]
-        let uriBuilder = UriBuilder endpoint;
-        uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "info" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "info" else uriBuilder.Path + "/info")
-        let uri = uriBuilder.Uri
-        async {
-          let! result = async {
-            try
-              use memoryStream = new MemoryStream (data, false)
-              use requestMessageContent = new StreamContent (memoryStream)
-              use requestMessage = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
-              requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
-              use httpClient = new HttpClient ()
-              use! responseMessage = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
-              match responseMessage.StatusCode with
-              | HttpStatusCode.OK ->
-                match responseMessage.Content with
-                | null ->
-                  this.logger.LogWarning (null, sprintf "Image server responded with no content (uri = %s)." uri.AbsoluteUri)
-                  return (None, exns)
-                | content ->
-                  let! json = content.AsyncReadAsString ()
-                  this.logger.LogDebug (null, sprintf "Got JSON reponse (uri = %s): %s" uri.AbsoluteUri json)
-                  let  info = JsonConvert.DeserializeObject<ImageInfo> (json, serializerSettings)
-                  return (Some info, [])
-              | HttpStatusCode.BadRequest ->
-                this.logger.LogWarning (null, sprintf "Image server responded with bad request (uri = %s)." uri.AbsoluteUri)
-                return (None, exns)
-              | HttpStatusCode.NotImplemented ->
-                this.logger.LogWarning (null, sprintf "Feature not implmented on image server (uri = %s)." uri.AbsoluteUri);
-                return (None, exns)
-              | statusCode ->
-                this.logger.LogWarning (null, sprintf "Image server responded with %A (uri = %s)." statusCode uri.AbsoluteUri)
-                return (None, exns)
-            with exn ->
-              this.logger.LogError (exn, sprintf "Exception thrown while getting image information (uri = %s)." uri.AbsoluteUri)
-              return (None, exn :: exns) }
-          match result with
-          | Some _ as info, _   -> return  (info, [])
-          | _, errors           -> return! invoke (i + 1) errors }
-    async {
-      let! result = invoke 0 []
-      return
-        match result with
-        | Some info, _ -> info
-        | _, []        -> ImageResizerClientException  ImageResizerClientHelpers.FailedMessage                           |> raise
-        | _, exns      -> ImageResizerClientException (ImageResizerClientHelpers.FailedMessage, AggregateException exns) |> raise }
+    let rec doInvoke lastErr endpoints = async {
+      match endpoints with
+      | [] -> return lastErr |> Option.defaultValue noEndpointsError |> Error
+      | e::es ->
+        let! res = this.AsyncResInvokeGetInfo (data, e)
+        match res with
+        | Ok info -> return Ok info
+        | Error (TryNext err) ->
+          this.logger.LogWarning (null, err.Description)
+          return! doInvoke (Some err) es
+        | Error (StopWithError err) -> return Error err }
+    doInvoke None (List.ofArray this.configuration.EndPoints)
+
+  member this.AsyncGetImageInfo (source : Stream) =
+    this.AsyncResGetImageInfo source
+    >>| getResult
+
   interface IImageResizer with
-    member this.AsyncResize (source, destination, options) = this.AsyncResize (source, destination, options)
-    member this.AsyncResize (path : string, destination, options) = async {
-      use buffer = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous ||| FileOptions.SequentialScan)
-      do! this.AsyncResize (buffer, destination, options) }
+    member this.AsyncResize (source : Stream, destination, options) = this.AsyncResize (source, destination, options)
+    member this.AsyncResize (source : string, destination, options) = this.AsyncResize (source, destination, options)
+    member this.AsyncResResize (source : Stream, destination, options) = this.AsyncResResize (source, destination, options)
+    member this.AsyncResResize (source : string, destination, options) = this.AsyncResResize (source, destination, options)
     member this.AsyncGetImageInfo source = this.AsyncGetImageInfo source

@@ -6,16 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ServiceCollectionExtensions.fs" />
+    <Compile Include="Jpegoptim.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="NCoreUtils.FSharp.DependencyInjection" Version="1.1.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.1" />
   </ItemGroup>
 
 </Project>

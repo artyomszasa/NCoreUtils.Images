@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <IsPackable>False</IsPackable>
-    <Version>1.1.0</Version>
+    <Version>1.1.3</Version>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="GCMiddleware.fs" />
     <Compile Include="Middleware.fs" />
     <Compile Include="Config.fs" />
     <Compile Include="Startup.fs" />
@@ -12,18 +16,21 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Grpc.Core" Version="1.12.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.0" />
-    <PackageReference Include="NCoreUtils.AspNetCore.KestrelConfiguration" Version="1.1.0" />
-    <PackageReference Include="NCoreUtils.AspNetCore.Logging.Google" Version="1.2.0" />
-    <!--
-    <PackageReference Include="NCoreUtils.FSharp" Version="1.1.1" />
-    -->
-    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.1.1" />
+    <PackageReference Include="NCoreUtils.AspNetCore.KestrelConfiguration" Version="1.1.1" />
+    <PackageReference Include="NCoreUtils.AspNetCore.Logging.Google" Version="1.2.1" />
+    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <!-- forced newer versions -->
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+    <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.ImageMagick\NCoreUtils.Images.ImageMagick.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.WebService.Shared\NCoreUtils.Images.WebService.Shared.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.Optimization.External\NCoreUtils.Images.Optimization.External.fsproj" />
   </ItemGroup>
   <Target Name="DockerBuild">
     <!-- Ensure properties -->

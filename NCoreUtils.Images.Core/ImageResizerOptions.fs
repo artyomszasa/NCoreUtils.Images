@@ -119,7 +119,7 @@ type ImageResizerOptions = {
   Quality     : ImageTypeQuality
   Optimize    : ImageTypeOptimize }
   with
-    static member Default = { Quality = ImageTypeQuality (); Optimize = ImageTypeOptimize (); MemoryLimit = Nullable<int64> (8L * 1024L * 1024L) }
+    static member Default = { Quality = ImageTypeQuality (); Optimize = ImageTypeOptimize (); MemoryLimit = Nullable<int64> (200L * 1024L * 1024L) }
     interface IImageResizerOptions with
       member this.MemoryLimit
         with get () = this.MemoryLimit
