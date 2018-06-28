@@ -86,6 +86,19 @@ and
     new (info : SerializationInfo, context) = { inherit ImageResizerException (info, context) }
     member this.ImageType = (this.Error :?> InvalidImageTypeError).ImageType
 
+type ImageOptimizationError (message, description, optimizer : string) =
+  inherit ImageResizerError (message, description)
+  member val Optimizer = optimizer
+
+type
+  [<Serializable>]
+  ImageOptimizationException =
+    inherit ImageResizerException
+    new (error : ImageOptimizationError) = { inherit ImageResizerException (error) }
+    new (error : ImageOptimizationError, innerException : exn) = { inherit ImageResizerException (error, innerException) }
+    new (info : SerializationInfo, context) = { inherit ImageResizerException (info, context) }
+    member this.Optimizer = (this.Error :?> ImageOptimizationError).Optimizer
+
 [<CompiledName("ImageResizerErrors")>]
 module ImageResizerError =
 
@@ -105,6 +118,21 @@ module ImageResizerError =
       description = "Specified image type is either invalid or not supported by the acutal instance of the image resizer.",
       imageType   = imageType)
 
+  [<CompiledName("InvalidImage")>]
+  let invalidImage =
+    ImageResizerError (
+      message     = "Invalid image data specified",
+      description = "Specified image type is either invalid or not supported by the acutal instance of the image resizer.")
+
+  [<CompiledName("OptimizationFailed")>]
+  let optimizationFailed optimizer description =
+    ImageOptimizationError (
+      message     = "Optimization failed",
+      description = description,
+      optimizer   = optimizer)
+
+  [<CompiledName("FormatOptimizationFailed")>]
+  let optimizationFailedf optimizer fmt = Printf.kprintf (optimizationFailed optimizer) fmt
 
 [<Interface>]
 type ILog =
@@ -129,7 +157,9 @@ type IImageResizer =
 
 [<Interface>]
 type IImageOptimization =
-  abstract Optimize : data:byte[] -> Async<byte[]>
+  abstract Supports         : imageType:string -> bool
+  abstract AsyncOptimize    : data:byte[] -> Async<byte[]>
+  abstract AsyncResOptimize : data:byte[] -> Async<Result<byte[], ImageOptimizationError>>
 
 // C# interop
 
@@ -251,6 +281,22 @@ type AsyncImageResizer () =
       Async.Adapt (fun cancellationToken -> this.TryResizeAsync (source, destination, options, cancellationToken))
       >>| AsyncResult.ToResult
     member this.AsyncGetImageInfo source = Async.Adapt (fun cancellationToken -> this.GetImageInfoAsync (source, cancellationToken))
+
+[<AbstractClass>]
+type AsyncImageOptimization () =
+  abstract Supports : imageType:string -> bool
+  abstract OptimizeAsync : data:byte[] * cancellationToken:CancellationToken -> Task<byte[]>
+  abstract TryOptimizeAsync : data:byte[] * cancellationToken:CancellationToken -> Task<AsyncResult<byte[], ImageOptimizationError>>
+  member inline internal this.OptimizeDirect (data, cancellationToken) = this.OptimizeAsync (data, cancellationToken)
+  member inline internal this.TryOptimizeDirect (data, cancellationToken) = this.TryOptimizeAsync (data, cancellationToken)
+  interface IImageOptimization with
+    member this.Supports imageType = this.Supports imageType
+    member this.AsyncOptimize data = Async.Adapt (fun cancellationToken -> this.OptimizeAsync (data, cancellationToken))
+    member this.AsyncResOptimize data =
+      Async.Adapt (fun cancellationToken -> this.TryOptimizeAsync (data, cancellationToken))
+      >>| AsyncResult<_, _>.ToResult
+
+// EXTENSIONS
 
 [<Extension>]
 [<Sealed; AbstractClass>]
@@ -394,3 +440,39 @@ type ImageResizerExtensions =
     match this with
     | :? AsyncImageResizer as inst -> inst.GetImageInfoDirect (source, cancellationToken)
     | _                            -> Async.StartAsTask (this.AsyncGetImageInfo source, cancellationToken = cancellationToken)
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member Optimize (this : IImageOptimization, data : byte[]) =
+    this.AsyncOptimize data |> Async.RunSynchronously
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member TryOptimize (this : IImageOptimization, data : byte[], [<Out>] result : byref<byte[]>, [<Out>] error : byref<_>) =
+    match this.AsyncResOptimize data |> Async.RunSynchronously with
+    | Ok res ->
+      result <- res
+      error  <- Unchecked.defaultof<_>
+      true
+    | Error err ->
+      result <- Unchecked.defaultof<_>
+      error  <- err
+      false
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member TryOptimize (this : IImageOptimization, data : byte[], [<Out>] result : byref<byte[]>) =
+    let mutable ignored = Unchecked.defaultof<_>
+    this.TryOptimize (data, &result, &ignored)
+
+  [<Extension>]
+  static member OptimizeAsync (this : IImageOptimization, data : byte[], cancellationToken : CancellationToken) =
+    match this with
+    | :? AsyncImageOptimization as inst -> inst.OptimizeDirect (data, cancellationToken)
+    | _                                 -> Async.StartAsTask (this.AsyncOptimize data, cancellationToken = cancellationToken)
+
+  [<Extension>]
+  static member TryOptimizeAsync (this : IImageOptimization, data : byte[], cancellationToken : CancellationToken) =
+    match this with
+    | :? AsyncImageOptimization as inst -> inst.TryOptimizeDirect (data, cancellationToken)
+    | _                                 -> Async.StartAsTask (this.AsyncResOptimize data >>| AsyncResult<_, _>.FromResult, cancellationToken = cancellationToken)

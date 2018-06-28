@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.0-sdk AS build-env-ncimages
+FROM microsoft/dotnet:2.1-sdk AS build-env-ncimages
 WORKDIR /app
 COPY ./NCoreUtils.Images.sln ./
 COPY ./NCoreUtils.Images/*.fsproj ./NCoreUtils.Images/
@@ -8,6 +8,8 @@ COPY ./NCoreUtils.Images.DependencyInjection/*.fsproj ./NCoreUtils.Images.Depend
 COPY ./NCoreUtils.Images.ImageMagick/*.fsproj ./NCoreUtils.Images.ImageMagick/
 COPY ./NCoreUtils.Images.Provider.ImageMagick/*.fsproj ./NCoreUtils.Images.Provider.ImageMagick/
 COPY ./NCoreUtils.Images.WebService/*.fsproj ./NCoreUtils.Images.WebService/
+COPY ./NCoreUtils.Images.Optimization.External/*.fsproj ./NCoreUtils.Images.Optimization.External/
+COPY ./NCoreUtils.Images.WebService.Shared/*.fsproj ./NCoreUtils.Images.WebService.Shared/
 RUN dotnet restore NCoreUtils.Images.WebService/NCoreUtils.Images.WebService.fsproj -r linux-x64
 
 COPY ./NCoreUtils.Images/*.fs ./NCoreUtils.Images/
@@ -17,11 +19,13 @@ COPY ./NCoreUtils.Images.DependencyInjection/*.fs ./NCoreUtils.Images.Dependency
 COPY ./NCoreUtils.Images.ImageMagick/*.fs ./NCoreUtils.Images.ImageMagick/
 COPY ./NCoreUtils.Images.Provider.ImageMagick/*.fs ./NCoreUtils.Images.Provider.ImageMagick/
 COPY ./NCoreUtils.Images.WebService/*.fs ./NCoreUtils.Images.WebService/
+COPY ./NCoreUtils.Images.Optimization.External/*.fs ./NCoreUtils.Images.Optimization.External/
+COPY ./NCoreUtils.Images.WebService.Shared/*.fs ./NCoreUtils.Images.WebService.Shared/
 RUN dotnet publish NCoreUtils.Images.WebService/NCoreUtils.Images.WebService.fsproj --no-restore -c Release -r linux-x64 -o /app/out
 
 # RUNTIME IMAGE
 
-FROM microsoft/dotnet:2.0-runtime-deps
+FROM microsoft/dotnet:2.1-runtime-deps
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils
 # install imagemagick dependencies
 RUN apt-get update \
@@ -79,7 +83,8 @@ RUN apt-get update \
       libxext6 \
       libxml2 \
       libxrender1 \
-      zlib1g
+      zlib1g \
+      jpegoptim
 # install libjpeg8
 RUN curl http://ftp.us.debian.org/debian/pool/main/libj/libjpeg8/libjpeg8_8d-1+deb7u1_amd64.deb > /tmp/libjpeg8_8d-1+deb7u1_amd64.deb \
       && dpkg -i /tmp/libjpeg8_8d-1+deb7u1_amd64.deb \
@@ -92,4 +97,5 @@ RUN /sbin/ldconfig
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT=Production
 COPY --from=build-env-ncimages /app/out ./
+COPY ./docker/NCoreUtils.Images.WebService.runtimeconfig.json ./
 ENTRYPOINT ["./NCoreUtils.Images.WebService", "--tcp=0.0.0.0:80"]

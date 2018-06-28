@@ -1,13 +1,19 @@
 namespace NCoreUtils.Images.WebService
 
-// open System
 open System.IO
-// open System.Threading.Tasks
+open System.Text
+open System.Threading
 open Microsoft.AspNetCore.Http
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.DependencyInjection
 open NCoreUtils.Images
+open Newtonsoft.Json
+open Newtonsoft.Json.Serialization
+
+type ServiceConfiguration () =
+  member val MaxConcurrentOps = 20 with get, set
+  override this.ToString () = sprintf "ServiceConfiguration[MaxConcurrentOps = %d]" this.MaxConcurrentOps
 
 module internal Middleware =
 
@@ -30,7 +36,10 @@ module internal Middleware =
           do! buffer.AsyncCopyTo (response.Body, 65536)
           do! response.Body.AsyncFlush () }
 
-
+  let private errorSerializerSettings =
+    let settings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
+    settings.Converters.Insert (0, ImageResizerErrorConverter ())
+    settings
 
   let inline private (|CI|_|) (comparand : string) (value : CaseInsensitive) =
     match CaseInsensitive comparand = value with
@@ -61,40 +70,49 @@ module internal Middleware =
     |> imageResizer.AsyncGetImageInfo
     >>= json httpContext
 
-  let resize httpContext (imageResizer : IImageResizer) = async {
+  let private resizeRes (semaphore : SemaphoreSlim) httpContext (imageResizer : IImageResizer) = async {
     let options = (HttpContext.request httpContext).Query |> readParameters
-
-    let tmp = Path.GetTempFileName ()
+    do! Async.Adapt (fun _ -> semaphore.WaitAsync (httpContext.RequestAborted))
     try
-      let inputSize = ref 0L
-      do! async {
-        use source  = HttpContext.requestBody httpContext
-        let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
-        do! source.AsyncCopyTo (buffer, 65536)
-        do! buffer.AsyncFlush ()
-        inputSize := buffer.Length }
-      match !inputSize with
-      | 0L ->
-        HttpContext.setResponseStatusCode 400
-      // use! buffer = async {
-      //   use source  = HttpContext.requestBody httpContext
-      //   let buffer  = new FileStream (Path.GetTempFileName (), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 65536, FileOptions.Asynchronous ||| FileOptions.DeleteOnClose)
-      //   do! source.AsyncCopyTo (buffer, 65536)
-      //   buffer.Seek (0L, SeekOrigin.Begin) |> ignore
-      //   return buffer }
-      let dest    = HttpContext.response httpContext |> HttpResponseDestination
-      do! imageResizer.AsyncResize (tmp, dest, options)
-    finally try if File.Exists tmp then File.Delete tmp with _ -> () }
+      let tmp = Path.GetTempFileName ()
+      try
+        let! inputSize = async {
+          use source  = HttpContext.requestBody httpContext
+          let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
+          do! source.AsyncCopyTo (buffer, 65536)
+          do! buffer.AsyncFlush ()
+          return buffer.Length }
+        match inputSize with
+        | 0L -> return Error <| ImageResizerError.invalidImage
+        | _  ->
+          let dest    = HttpContext.response httpContext |> HttpResponseDestination
+          return! imageResizer.AsyncResResize (tmp, dest, options)
+      finally try if File.Exists tmp then File.Delete tmp with _ -> ()
+    finally semaphore.Release () |> ignore }
+
+  let private resize semaphore httpContext imageResizer = async {
+    let! res = resizeRes semaphore httpContext imageResizer
+    match res with
+    | Ok _ -> ()
+    | Error err ->
+      let response = HttpContext.response httpContext
+      response.StatusCode <- 400
+      response.ContentType <- "application/json"
+      let json = JsonConvert.SerializeObject (err, errorSerializerSettings)
+      let data = Encoding.UTF8.GetBytes json
+      response.ContentLength <- Nullable.mk data.LongLength
+      do! response.Body.AsyncWrite data
+      do! response.Body.AsyncFlush () }
 
   let inline private async405 httpContext =
     HttpContext.setResponseStatusCode 405 httpContext
     async.Return ()
 
-  let run httpContext asyncNext =
+  let run semaphore httpContext asyncNext =
     match HttpContext.path httpContext with
     | [] ->
       match HttpContext.httpMethod httpContext with
-      | HttpMethod.HttpPost -> getService<IImageResizer> httpContext.RequestServices |> resize httpContext
+      | HttpMethod.HttpPost -> getService<IImageResizer> httpContext.RequestServices |> resize semaphore httpContext
       | _                   -> async405 httpContext
     | [ CI "info" ] ->
       match HttpContext.httpMethod httpContext with

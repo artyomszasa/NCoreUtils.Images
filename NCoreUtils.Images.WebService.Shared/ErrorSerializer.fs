@@ -43,7 +43,9 @@ module private ImageResizerErrorConverterHelpers =
     Map.ofList
       [ "generic",             typeof<ImageResizerError>
         "invalid_resize_mode", typeof<InvalidResizeModeError>
-        "invalid_image_type",  typeof<InvalidImageTypeError> ]
+        "invalid_image_type",  typeof<InvalidImageTypeError>
+        "optimization",        typeof<ImageOptimizationError> ]
+
   let type2name =
     name2type |> Seq.map (fun kv -> kv.Value, kv.Key) |> Seq.toArray
 

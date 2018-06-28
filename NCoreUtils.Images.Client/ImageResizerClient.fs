@@ -9,8 +9,10 @@ open System.Text
 open NCoreUtils
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
-open System.Runtime.Serialization
 open System.Runtime.ExceptionServices
+
+type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
+type private SerializationException = System.Runtime.Serialization.SerializationException
 
 type ImageResizerClientConfiguration () =
   member val EndPoints = Array.empty<string> with get, set
@@ -89,7 +91,7 @@ module private ImageResizerClientHelpers =
   let infoSerializerSettings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
 
   let errorSerializerSettings =
-    let settings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore)
+    let settings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
     settings.Converters.Insert (0, ImageResizerErrorConverter ())
     settings
 
