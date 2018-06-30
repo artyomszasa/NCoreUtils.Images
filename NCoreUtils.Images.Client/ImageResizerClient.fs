@@ -18,23 +18,41 @@ type ImageResizerClientConfiguration () =
   member val EndPoints = Array.empty<string> with get, set
 
 [<Serializable>]
-type RemoteImageResizerError internal (message : string, description : string, uri : string) =
-  inherit ImageResizerError (message, description)
-  member val Uri = uri
+type RemoteImageResizerError =
+  inherit ImageResizerError
+  val mutable private uri : string
+  internal new (message, description, uri) =
+    { inherit ImageResizerError (message, description)
+      uri = uri }
+  private new () = RemoteImageResizerError (null, null, null)
+  member this.Uri = this.uri
+  member private this.Uri with set uri = this.uri <- uri
   override this.RaiseException () = RemoteImageResizerException this |> raise
 
 and
   [<Serializable>]
-  RemoteImageResizerStatusCodeError internal (message : string, description : string, uri : string, statusCode : int) =
-    inherit RemoteImageResizerError (message, description, uri)
-    member val StatusCode = statusCode
+  RemoteImageResizerStatusCodeError =
+    inherit RemoteImageResizerError
+    val mutable private statusCode : int
+    internal new (message, description, uri, statusCode) =
+      { inherit RemoteImageResizerError (message, description, uri)
+        statusCode = statusCode }
+    private new () = RemoteImageResizerStatusCodeError (null, null, null, 0)
+    member this.StatusCode = this.statusCode
+    member private this.StatusCode with set statusCode = this.statusCode <- statusCode
     override this.RaiseException () = RemoteImageResizerStatusCodeException this |> raise
 
 and
   [<Serializable>]
-  RemoteImageResizerClrError internal (message : string, description : string, uri : string, innerException : exn) =
-    inherit RemoteImageResizerError (message, description, uri)
-    member val InnerException = innerException
+  RemoteImageResizerClrError =
+    inherit RemoteImageResizerError
+    val mutable private innerException : exn
+    internal new (message, description, uri, innerException) =
+      { inherit RemoteImageResizerError (message, description, uri)
+        innerException = innerException }
+    private new () = RemoteImageResizerClrError (null, null, null, null)
+    member this.InnerException = this.innerException
+    member private this.InnerException with set innerException = this.innerException <- innerException
     override this.RaiseException () = RemoteImageResizerException (this, this.InnerException) |> raise
 
 and

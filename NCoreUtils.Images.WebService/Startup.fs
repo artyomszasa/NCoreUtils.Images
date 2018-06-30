@@ -49,7 +49,8 @@ type Startup () =
         services.AddSingleton<ServiceConfiguration> (ServiceConfiguration (MaxConcurrentOps = 20)) |> ignore
     services
       .AddSingleton<IConfiguration>(configuration)
-      .AddLogging(fun b -> b.ClearProviders().SetMinimumLevel(LogLevel.Trace) |> ignore)
+      .AddLogging(fun b -> b.ClearProviders().SetMinimumLevel(LogLevel.Information) |> ignore)
+      .AddPrePopulatedLoggingContext()
       .AddSingleton(JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ()))
       .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
       .AddSingletonImageOptimization<JpegoptimOptimization>()
@@ -66,5 +67,6 @@ type Startup () =
     // ImageMagick.MagickNET.Log.AddHandler (fun _ e -> printfn "%s" e.Message)
 
     app
+      .UsePrePopulateLoggingContext()
       .Use(GCMiddleware.run)
       .Use(Middleware.run semaphore) |> ignore

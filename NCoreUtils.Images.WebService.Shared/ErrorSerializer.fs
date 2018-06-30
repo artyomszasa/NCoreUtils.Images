@@ -39,15 +39,16 @@ type internal BufferedJsonReader (tokens : IReadOnlyList<BufferedJsonToken>) =
 
 [<AutoOpen>]
 module private ImageResizerErrorConverterHelpers =
-  let name2type =
-    Map.ofList
-      [ "generic",             typeof<ImageResizerError>
-        "invalid_resize_mode", typeof<InvalidResizeModeError>
-        "invalid_image_type",  typeof<InvalidImageTypeError>
-        "optimization",        typeof<ImageOptimizationError> ]
+  let private list =
+    [ "invalid_resize_mode", typeof<InvalidResizeModeError>
+      "invalid_image_type",  typeof<InvalidImageTypeError>
+      "optimization",        typeof<ImageOptimizationError>
+      "generic",             typeof<ImageResizerError> ]
+
+  let name2type = Map.ofList list
 
   let type2name =
-    name2type |> Seq.map (fun kv -> kv.Value, kv.Key) |> Seq.toArray
+    list |> Seq.map (fun (a, b) -> (b, a)) |> Seq.toArray
 
   let inline readOrFail (reader : JsonReader) =
     if not <| reader.Read () then
@@ -73,7 +74,7 @@ type ImageResizerErrorConverter () =
     match Array.tryFind (fst >> ((=) ``type``)) type2name >>| snd with
     | Some name -> name
     | _             -> invalidOpf "Not registered image resizer error of type %s" ``type``.FullName
-  override __.CanConvert objectType = Seq.exists (fst >> ((=) objectType)) type2name
+  override __.CanConvert objectType = objectType = typeof<ImageResizerError> || Seq.exists (fst >> ((=) objectType)) type2name
   override this.ReadJson (reader, _, _, serializer) =
     let preload = Dictionary ()
     ensure JsonToken.StartObject reader
@@ -98,7 +99,7 @@ type ImageResizerErrorConverter () =
           readOrFail reader
         preload.Add (propertyName, buffer)
     // type found, proceed with preloaded properties
-    let obj = Activator.CreateInstance dynamicType
+    let obj = Activator.CreateInstance (dynamicType, true)
     for kv in preload do
       let propertyName = kv.Key
       let property = dynamicType.GetProperty (propertyName, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.FlattenHierarchy ||| BindingFlags.IgnoreCase)
@@ -129,4 +130,4 @@ type ImageResizerErrorConverter () =
         let name = property.Name.Substring(0, 1).ToLowerInvariant() + property.Name.Substring(1)
         writer.WritePropertyName name
         serializer.Serialize (writer, property.GetValue (value, null))
-        writer.WriteEndObject ()
+      writer.WriteEndObject ()

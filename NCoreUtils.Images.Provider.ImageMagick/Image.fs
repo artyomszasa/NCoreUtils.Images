@@ -64,7 +64,16 @@ module private ImageHelpers =
     | :? Guid as guid -> guid.ToString ()
     | _ -> null
 
+  let inline (|ImagickError|_|) (exn : exn) =
+    match exn with
+    | :? MagickMissingDelegateErrorException as e ->
+      match e.Message.StartsWith "no decode delegate for this image format" with
+      | true -> Some ImageResizerError.invalidImage
+      | _    -> None
+    | _ -> None
+
 type ImageProvider () =
+
   member this.FromStream (stream : Stream) =
     new Image (new MagickImage (stream), this)
   interface IImageProvider with
@@ -75,9 +84,30 @@ type ImageProvider () =
         printfn "ResourceLimits.Memory = %d" ResourceLimits.Memory
         printfn "ResourceLimits.Disk = %d" ResourceLimits.Disk
         printfn "ResourceLimits.Thread = %d" ResourceLimits.Thread
-    member this.AsyncFromStream stream = this.FromStream stream :> IImage |> async.Return
+    member this.AsyncFromStream stream =
+      Async.FromContinuations
+        (fun (succ, err, _) ->
+          try this.FromStream stream :> IImage |> succ
+          with e -> err e
+        )
+    member this.AsyncResFromStream stream =
+      let res =
+        try this.FromStream stream :> IImage |> Ok
+        with
+          | ImagickError err -> Error err
+          | _ -> reraise ()
+      async.Return res
+
   interface IDirectImageProvider with
-    member this.AsyncFromPath path = new Image (new MagickImage (path), this) :> IImage |> async.Return
+    member this.AsyncFromPath path =
+      new Image (new MagickImage (path), this) :> IImage |> async.Return
+    member this.AsyncResFromPath path =
+      let res =
+        try new Image (new MagickImage (path), this) :> IImage |> Ok
+        with
+          | ImagickError err -> Error err
+          | _ -> reraise ()
+      async.Return res
 
 and
   [<Sealed>]

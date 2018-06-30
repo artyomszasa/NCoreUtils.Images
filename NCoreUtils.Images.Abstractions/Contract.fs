@@ -17,30 +17,50 @@ module private ImageResizerExceptionKeys =
   let KeyImageResizeErrorType = "ImageResizerErrorType"
 
 [<Serializable>]
-type ImageResizerError internal (message : string, description : string) =
-  member val Message = message
-  member val Description = description
+type ImageResizerError  =
+  val mutable private message : string
+  val mutable private description : string
+  internal new (message, description) = { message = message; description = description }
+  private new () = ImageResizerError (null, null)
+  member this.Message = this.message
+  member this.Description = this.description
+  member private this.Message with set message = this.message <- message
+  member private this.Description with set description = this.description <- description
   abstract RaiseException : unit -> 'a
   default this.RaiseException () = ImageResizerException this |> raise
 
 and
   [<Serializable>]
-  InvalidArgumentError internal (message, description) =
-    inherit ImageResizerError (message, description)
+  InvalidArgumentError =
+    inherit ImageResizerError
+    internal new (message, description) = { inherit ImageResizerError (message, description) }
+    private new () = InvalidArgumentError (null, null)
     override this.RaiseException () = ImageResizerException this |> raise
-
 
 and
   [<Serializable>]
-  InvalidResizeModeError internal (message, description, resizeMode : string) =
-    inherit InvalidArgumentError (message, description)
-    member val ResizeMode = resizeMode
+  InvalidResizeModeError =
+    inherit InvalidArgumentError
+    val mutable private resizeMode : string
+    internal new (message, description, resizeMode) =
+      { inherit InvalidArgumentError (message, description)
+        resizeMode = resizeMode }
+    private new () = InvalidResizeModeError (null, null, null)
+    member this.ResizeMode = this.resizeMode
+    member private this.ResizeMode with set resizeMode = this.resizeMode <- resizeMode
     override this.RaiseException () = InvalidResizeModeException this |> raise
 
 and
-  InvalidImageTypeError internal (message, description, imageType : string) =
-    inherit InvalidArgumentError (message, description)
-    member val ImageType = imageType
+  [<Serializable>]
+  InvalidImageTypeError =
+    inherit InvalidArgumentError
+    val mutable private imageType : string
+    internal new (message, description, imageType) =
+      { inherit InvalidArgumentError (message, description)
+        imageType = imageType }
+    private new () = InvalidImageTypeError (null, null, null)
+    member this.ImageType = this.imageType
+    member private this.ImageType with set imageType = this.imageType <- imageType
     override this.RaiseException () = InvalidImageTypeException this |> raise
 
 and
@@ -86,11 +106,18 @@ and
     new (info : SerializationInfo, context) = { inherit ImageResizerException (info, context) }
     member this.ImageType = (this.Error :?> InvalidImageTypeError).ImageType
 
-type ImageOptimizationError (message, description, optimizer : string) =
-  inherit ImageResizerError (message, description)
-  member val Optimizer = optimizer
+type ImageOptimizationError =
+  inherit ImageResizerError
+  val mutable private optimizer : string
+  new (message, description, optimizer) =
+    { inherit ImageResizerError (message, description)
+      optimizer = optimizer }
+  private new () = ImageOptimizationError (null, null, null)
+  member this.Optimizer = this.optimizer
+  member private this.Optimizer with set optimizer = this.optimizer <- optimizer
+  override this.RaiseException () = ImageOptimizationException this |> raise
 
-type
+and
   [<Serializable>]
   ImageOptimizationException =
     inherit ImageResizerException

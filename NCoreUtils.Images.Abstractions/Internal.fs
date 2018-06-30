@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open NCoreUtils
 open NCoreUtils.Images
+open NCoreUtils.Images
 
 type
   [<Struct>]
@@ -167,7 +168,8 @@ type
   [<Interface>]
   IImageProvider =
     abstract MemoryLimit : int64 with get, set
-    abstract AsyncFromStream : stream:Stream -> Async<IImage>
+    abstract AsyncFromStream    : stream:Stream -> Async<IImage>
+    abstract AsyncResFromStream : stream:Stream -> Async<Result<IImage, ImageResizerError>>
 
 and
   [<Interface>]
@@ -187,6 +189,7 @@ type
   IDirectImageProvider =
     inherit IImageProvider
     abstract AsyncFromPath : path:string -> Async<IImage>
+    abstract AsyncResFromPath : path:string -> Async<Result<IImage, ImageResizerError>>
 
 
 type
@@ -203,10 +206,14 @@ type
     abstract MemoryLimit : int64 with get, set
 
     abstract FromStreamAsync : stream:Stream * [<Optional>] cancellationToken:CancellationToken -> Task<IImage>
+    abstract TryFromStreamAsync : stream:Stream * [<Optional>] cancellationToken:CancellationToken -> Task<AsyncResult<IImage, ImageResizerError>>
     member inline internal this.FromStreamDirect (stream, cancellationToken) = this.FromStreamAsync (stream, cancellationToken)
     interface IImageProvider with
       member this.MemoryLimit with get () = this.MemoryLimit and set limit = this.MemoryLimit <- limit
       member this.AsyncFromStream stream = Async.Adapt (fun cancellationToken -> this.FromStreamAsync (stream, cancellationToken))
+      member this.AsyncResFromStream stream =
+        Async.Adapt (fun cancellationToken -> this.TryFromStreamAsync (stream, cancellationToken))
+        >>| AsyncResult<_, _>.ToResult
 
 type
   [<AbstractClass>]
