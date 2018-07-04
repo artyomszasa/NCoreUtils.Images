@@ -74,20 +74,26 @@ module internal Middleware =
     let options = (HttpContext.request httpContext).Query |> readParameters
     do! Async.Adapt (fun _ -> semaphore.WaitAsync (httpContext.RequestAborted))
     try
-      let tmp = Path.GetTempFileName ()
-      try
-        let! inputSize = async {
-          use source  = HttpContext.requestBody httpContext
-          let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
-          do! source.AsyncCopyTo (buffer, 65536)
-          do! buffer.AsyncFlush ()
-          return buffer.Length }
-        match inputSize with
-        | 0L -> return Error <| ImageResizerError.invalidImage
-        | _  ->
-          let dest    = HttpContext.response httpContext |> HttpResponseDestination
-          return! imageResizer.AsyncResResize (tmp, dest, options)
-      finally try if File.Exists tmp then File.Delete tmp with _ -> ()
+      match httpContext.Request.ContentLength.HasValue with
+      | true when httpContext.Request.ContentLength.Value = 0L -> return Error <| ImageResizerError.invalidImage
+      | true when httpContext.Request.ContentLength.Value < 5L * 1024L * 1024L ->
+        let dest = HttpContext.response httpContext |> HttpResponseDestination
+        return! imageResizer.AsyncResResize (httpContext.Request.Body, dest, options)
+      | _ ->
+        let tmp = Path.GetTempFileName ()
+        try
+          let! inputSize = async {
+            use source  = HttpContext.requestBody httpContext
+            let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
+            do! source.AsyncCopyTo (buffer, 65536)
+            do! buffer.AsyncFlush ()
+            return buffer.Length }
+          match inputSize with
+          | 0L -> return Error <| ImageResizerError.invalidImage
+          | _  ->
+            let dest    = HttpContext.response httpContext |> HttpResponseDestination
+            return! imageResizer.AsyncResResize (tmp, dest, options)
+        finally try if File.Exists tmp then File.Delete tmp with _ -> ()
     finally semaphore.Release () |> ignore }
 
   let private resize semaphore httpContext imageResizer = async {
