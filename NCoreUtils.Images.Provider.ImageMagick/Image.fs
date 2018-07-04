@@ -69,6 +69,9 @@ module private ImageHelpers =
     | :? MagickMissingDelegateErrorException as e ->
       match e.Message.StartsWith "no decode delegate for this image format" with
       | true -> Some ImageResizerError.invalidImage
+      | _    ->
+      match e.Message.StartsWith "NoDecodeDelegateForThisImageFormat" with
+      | true -> Some ImageResizerError.invalidImage
       | _    -> None
     | _ -> None
 
