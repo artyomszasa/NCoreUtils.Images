@@ -72,6 +72,9 @@ module private ImageHelpers =
       | _    ->
       match e.Message.StartsWith "NoDecodeDelegateForThisImageFormat" with
       | true -> Some ImageResizerError.invalidImage
+      | _    ->
+      match e.Message.StartsWith "UnableToOpenFile" with
+      | true -> Some ImageResizerError.invalidImage
       | _    -> None
     | _ -> None
 
