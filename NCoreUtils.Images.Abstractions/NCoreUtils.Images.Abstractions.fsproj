@@ -14,13 +14,16 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Data.fs" />
+    <Compile Include="ErrorContract.fs" />
     <Compile Include="Contract.fs" />
+    <Compile Include="ContractExtensions.fs" />
     <Compile Include="Internal.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="1.0.1" />
     <PackageReference Include="NCoreUtils.FSharp" Version="1.1.4" />
+    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="1.0.0-alpha1" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
   </ItemGroup>
 

@@ -10,6 +10,7 @@ open NCoreUtils.DependencyInjection
 open NCoreUtils.Images
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
+open System.Runtime.ExceptionServices
 
 type ServiceConfiguration () =
   member val MaxConcurrentOps = 20 with get, set
@@ -35,6 +36,14 @@ module internal Middleware =
           response.ContentLength <- Nullable.mk buffer.Length
           do! buffer.AsyncCopyTo (response.Body, 65536)
           do! response.Body.AsyncFlush () }
+      member this.AsyncWriteDelayed generator =
+        let setContentType (info : ContentInfo) =
+          response.ContentType <-
+            match info.ContentType with
+            | null -> "application/octet-stream"
+            | ct   -> ct
+        generator setContentType response.Body
+
 
   let private errorSerializerSettings =
     let settings = JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ())
@@ -70,30 +79,39 @@ module internal Middleware =
     |> imageResizer.AsyncGetImageInfo
     >>= json httpContext
 
+  let handle (computation : unit -> Async<_>) = async {
+    try return! computation () >>| Ok
+    with
+      | :? ImageResizerException as exn -> return exn.Error |> Error
+      | exn                             -> ExceptionDispatchInfo.Capture(exn).Throw (); return Unchecked.defaultof<_> }
+
+
   let private resizeRes (semaphore : SemaphoreSlim) httpContext (imageResizer : IImageResizer) = async {
     let options = (HttpContext.request httpContext).Query |> readParameters
     do! Async.Adapt (fun _ -> semaphore.WaitAsync (httpContext.RequestAborted))
     try
-      match httpContext.Request.ContentLength.HasValue with
-      | true when httpContext.Request.ContentLength.Value = 0L -> return Error <| ImageResizerError.invalidImage
-      | true when httpContext.Request.ContentLength.Value < 5L * 1024L * 1024L ->
-        let dest = HttpContext.response httpContext |> HttpResponseDestination
-        return! imageResizer.AsyncResResize (httpContext.Request.Body, dest, options)
-      | _ ->
-        let tmp = Path.GetTempFileName ()
-        try
-          let! inputSize = async {
-            use source  = HttpContext.requestBody httpContext
-            let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
-            do! source.AsyncCopyTo (buffer, 65536)
-            do! buffer.AsyncFlush ()
-            return buffer.Length }
-          match inputSize with
-          | 0L -> return Error <| ImageResizerError.invalidImage
-          | _  ->
-            let dest    = HttpContext.response httpContext |> HttpResponseDestination
-            return! imageResizer.AsyncResResize (tmp, dest, options)
-        finally try if File.Exists tmp then File.Delete tmp with _ -> ()
+      // match httpContext.Request.ContentLength.HasValue with
+      // | true when httpContext.Request.ContentLength.Value = 0L -> return Error <| ImageResizerError.invalidImage
+      // | true when httpContext.Request.ContentLength.Value < 5L * 1024L * 1024L ->
+      //   let dest = HttpContext.response httpContext |> HttpResponseDestination
+      //   return! handle (fun () -> imageResizer.AsyncResize (httpContext.Request.Body, dest, options))
+      // | _ ->
+      //   let tmp = Path.GetTempFileName ()
+      //   try
+      //     let! inputSize = async {
+      //       use source  = HttpContext.requestBody httpContext
+      //       let buffer  = new FileStream (tmp, FileMode.Create, FileAccess.Write, FileShare.None, 65536, FileOptions.Asynchronous)
+      //       do! source.AsyncCopyTo (buffer, 65536)
+      //       do! buffer.AsyncFlush ()
+      //       return buffer.Length }
+      //     match inputSize with
+      //     | 0L -> return Error <| ImageResizerError.invalidImage
+      //     | _  ->
+      //       let dest    = HttpContext.response httpContext |> HttpResponseDestination
+      //       return! handle  imageResizer.AsyncResResize (tmp, dest, options)
+      //   finally try if File.Exists tmp then File.Delete tmp with _ -> ()
+      let dest = HttpContext.response httpContext |> HttpResponseDestination
+      return! handle (fun () -> imageResizer.AsyncResize (httpContext.Request.Body, dest, options))
     finally semaphore.Release () |> ignore }
 
   let private resize semaphore httpContext imageResizer = async {
