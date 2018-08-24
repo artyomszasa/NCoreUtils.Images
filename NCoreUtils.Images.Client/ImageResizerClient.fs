@@ -346,7 +346,5 @@ type ImageResizerClient =
 
   interface IImageResizer with
     member this.AsyncResize (source : Stream, destination, options) = this.AsyncResize (source, destination, options)
-    member this.AsyncResize (source : string, destination, options) = this.AsyncResize (source, destination, options)
     member this.AsyncResResize (source : Stream, destination, options) = this.AsyncResResize (source, destination, options)
-    member this.AsyncResResize (source : string, destination, options) = this.AsyncResResize (source, destination, options)
     member this.AsyncGetImageInfo source = this.AsyncGetImageInfo source

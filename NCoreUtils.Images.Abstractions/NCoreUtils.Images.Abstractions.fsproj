@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>1.1.8</Version>
+    <Version>2.0.3</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -14,14 +14,17 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Data.fs" />
+    <Compile Include="ErrorContract.fs" />
     <Compile Include="Contract.fs" />
+    <Compile Include="ContractExtensions.fs" />
     <Compile Include="Internal.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="1.0.1" />
-    <PackageReference Include="NCoreUtils.FSharp" Version="1.1.4" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="2.0.0" />
+    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="1.0.0-alpha2" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
-
 </Project>

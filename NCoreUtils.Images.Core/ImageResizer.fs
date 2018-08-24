@@ -6,6 +6,10 @@ open System.Runtime.Serialization
 open NCoreUtils
 open NCoreUtils.Images.Internal
 open System.IO
+open NCoreUtils.IO
+open System.Threading.Tasks
+
+type private LazyStream (source : ContentInfo -> Stream) = class end
 
 module private InvalidResizeModeExceptionHelpers =
   [<Literal>]
@@ -109,76 +113,62 @@ type ImageResizer =
     | true -> options.Optimize.Value
     | _    -> this.options.Optimize imageType
 
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member this.DoAsyncResResize (source : unit -> Async<Result<IImage, _>>, destination : IImageDestination, options : ResizeOptions) = async {
+  member private this.TryGetOptimizationTransformation options imageType =
+    let shouldOptimize = this.DecideOptimize options imageType
+    match this.TryGetOptimizationsFor shouldOptimize imageType with
+    | [] -> None
+    | optimizations ->
+      optimizations
+      |> Seq.map (fun optimization -> optimization :> IStreamTransformation)
+      |> Seq.reduce StreamTransformation.chain
+      |> Some
+
+  member private this.CreateTransformation (options : ResizeOptions) =
     this.logger.LogDebug (null, sprintf "Processing options = %A" options)
     let resizeMode = options.ResizeMode |?? "none"
     match this.resizers.TryGetValue resizeMode with
-    | None -> return ImageResizerError.invalidMode resizeMode :> ImageResizerError |> Error
-    | Some factory ->
-      let! image0 = source ()
-      match image0 with
-      | Error err -> return Error err
-      | Ok image ->
-        try
-          match decideImageType image options with
-          | Error err -> return Error err
-          | Ok imageType ->
-            let resizer = factory.CreateResizer (image, options)
-            image.Resize resizer
-            let quality        = this.DecideQuality options imageType
-            let shouldOptimize = this.DecideOptimize options imageType
-            match this.TryGetOptimizationsFor shouldOptimize imageType with
-            | [] ->
-              do! destination.AsyncWrite (ContentInfo (contentType = ImageType.toMediaType imageType), fun stream -> image.AsyncWriteTo (stream, imageType, quality))
-              this.logger.LogDebug (null, sprintf "Successfully created image of type %A" imageType)
-              return Ok ()
-            | optimizations ->
-              this.logger.LogDebug (null, sprintf "Running optimizations for type %A" imageType)
-              let! originalData = async {
-                use buffer = new MemoryStream ()
-                do! image.AsyncWriteTo (buffer, imageType, quality)
-                return buffer.ToArray () }
-              let rec apply data optimizations = async {
-                match optimizations with
-                | [] -> return data
-                | (optimization : IImageOptimization) :: optimizations' ->
-                  let! res = optimization.AsyncResOptimize data
-                  return!
-                    match res with
-                    | Ok    data' -> apply data' optimizations'
-                    | Error err   ->
-                      this.logger.LogDebug (null, sprintf " (%s) %s: %s" err.Optimizer err.Message err.Description)
-                      apply data optimizations' }
-              let! finalData = apply originalData optimizations
-              do! destination.AsyncWrite (
-                    ContentInfo (contentType = ImageType.toMediaType imageType, contentLength = Nullable.mk finalData.LongLength),
-                    fun stream -> stream.AsyncWrite finalData)
-              this.logger.LogDebug (null, sprintf "Successfully created optimized image of type %A" imageType)
-              return Ok ()
-        finally image.Dispose () }
+    | ValueNone -> (ImageResizerError.invalidMode resizeMode).RaiseException ()
+    | ValueSome factory ->
+      // let resizeTransformation =
+        { new IDependentStreamTransformation<_> with
+            member __.Dispose () = ()
+            member __.AsyncPerform (input, dependentOutput) = async {
+              use! image = this.provider.AsyncFromStream input
+              let imageType =
+                match decideImageType image options with
+                | Error err    -> err.RaiseException ()
+                | Ok imageType -> imageType
+              // setContentType <| ImageType.toMediaType imageType
+              let output = dependentOutput imageType
+              let resizer = factory.CreateResizer (image, options)
+              image.Resize resizer
+              let quality = this.DecideQuality options imageType
+              do! image.AsyncWriteTo (output, imageType, quality)
+              do! output.AsyncFlush ()
+              output.Close () }
+        }
 
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member this.AsyncResResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
-    this.DoAsyncResResize ((fun () -> this.provider.AsyncResFromStream source), destination, options)
+  member this.AsyncResize (input : Stream, destination : IImageDestination, options) =
+    destination.AsyncWriteDelayed
+      (fun setContentInfo output -> async {
+        let resizeTransformation = this.CreateTransformation options
+        use pipeline =
+          StreamTransformation.chainDependent
+            resizeTransformation
+            (fun imageType ->
+              setContentInfo <| ContentInfo (contentType = ImageType.toMediaType imageType)
+              this.TryGetOptimizationTransformation options imageType
+            )
+        do! pipeline.AsyncPerform (input, output)
+        do! output.AsyncFlush ()
+      })
 
-  member this.AsyncResResize (source : string, destination : IImageDestination, options : ResizeOptions) =
-    match this.provider with
-    | :? IDirectImageProvider as dprovider ->
-      this.DoAsyncResResize ((fun () -> dprovider.AsyncResFromPath source), destination, options)
-    | provider -> async {
-      use bufferStream = new FileStream (source, FileMode.Open, FileAccess.Read, FileShare.Read)
-      return! this.DoAsyncResResize ((fun () -> provider.AsyncResFromStream bufferStream), destination, options) }
-
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member this.AsyncResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
-    this.AsyncResResize (source, destination, options)
-    >>| getResult
-
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member this.AsyncResize (source : string, destination : IImageDestination, options : ResizeOptions) =
-    this.AsyncResResize (source, destination, options)
-    >>| getResult
+  member this.AsyncResResize (input : Stream, destination : IImageDestination, options) = async {
+    try
+      do! this.AsyncResize (input, destination, options)
+      return Ok ()
+    with e ->
+      return ImageResizerError.generic (e.GetType().Name) e.Message |> Error }
 
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   member this.AsyncGetImageInfo stream = async {
@@ -190,8 +180,6 @@ type ImageResizer =
     return info }
 
   interface IImageResizer with
-    member this.AsyncResize (source : string, destination, options) = this.AsyncResize (source, destination, options)
-    member this.AsyncResize (source : Stream, destination, options) = this.AsyncResize (source, destination, options)
-    member this.AsyncResResize (source : string, destination, options) = this.AsyncResResize (source, destination, options)
+    member this.AsyncResize    (source : Stream, destination, options) = this.AsyncResize    (source, destination, options)
     member this.AsyncResResize (source : Stream, destination, options) = this.AsyncResResize (source, destination, options)
     member this.AsyncGetImageInfo stream = this.AsyncGetImageInfo stream

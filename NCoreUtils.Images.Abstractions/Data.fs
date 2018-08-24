@@ -12,6 +12,8 @@ type
   static member val Empty = ContentInfo ()
   member val ContentLength = contentLength
   member val ContentType   = contentType
+  member this.WithContentLength contentLength = ContentInfo (contentLength, this.ContentType)
+  member this.WithContentType   contentType   = ContentInfo (this.ContentLength, contentType)
 
 [<AutoOpen>]
 module private ResizeOptionsHelpers =
