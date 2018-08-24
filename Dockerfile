@@ -96,6 +96,7 @@ RUN /sbin/ldconfig
 # copy app
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:80
 COPY --from=build-env-ncimages /app/out ./
 COPY ./docker/NCoreUtils.Images.WebService.runtimeconfig.json ./
-ENTRYPOINT ["./NCoreUtils.Images.WebService", "--tcp=0.0.0.0:80"]
+ENTRYPOINT ["./NCoreUtils.Images.WebService"]

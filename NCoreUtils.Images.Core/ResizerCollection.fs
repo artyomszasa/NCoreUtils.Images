@@ -29,15 +29,14 @@ and
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     internal new (builder : ResizerCollectionBuilder) = { collection = builder.collection |> Seq.fold (fun map kv -> Map.add kv.Key kv.Value map) Map.empty }
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-    member this.TryGetValue name = Map.tryFind (CaseInsensitive name) this.collection
+    member this.TryGetValue name =
+      let mutable value = Unchecked.defaultof<_>
+      match this.TryGetValue (name, &value) with
+      | true -> ValueSome value
+      | _    -> ValueNone
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.TryGetValue (name : string, [<Out>] factory : byref<_>) =
-      match this.TryGetValue name with
-      | Some f ->
-        factory <- f
-        true
-      | _ ->
-        factory <- Unchecked.defaultof<_>
-        false
+      this.collection.TryGetValue (CaseInsensitive name, &factory)
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member private this.GetEnumerator () = (this.collection :> seq<_>).GetEnumerator().Select(fun kv -> KeyValuePair (kv.Key.ToLowerString (), kv.Value))
     interface IEnumerable with
@@ -49,8 +48,8 @@ and
       member this.Item
         with get name =
           match this.TryGetValue name with
-          | Some f -> f
-          | _      -> sprintf "No resizer factory registered for %s" name |> KeyNotFoundException |> raise
+          | ValueSome f -> f
+          | _           -> sprintf "No resizer factory registered for %s" name |> KeyNotFoundException |> raise
       member this.ContainsKey name = Map.containsKey (CaseInsensitive name) this.collection
       member this.TryGetValue (name, [<Out>] factory : byref<_>) = this.TryGetValue (name, &factory)
       member this.GetEnumerator () = this.GetEnumerator ()

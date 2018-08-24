@@ -1,15 +1,20 @@
 namespace NCoreUtils.Images.WebService
 
 open Microsoft.AspNetCore.Hosting
-open NCoreUtils.AspNetCore
+open Microsoft.AspNetCore.Server.Kestrel.Core
+open System
 
 module Program =
   let exitCode = 0
 
+  let private configureKestrel (options : KestrelServerOptions) =
+    options.Limits.MaxResponseBufferSize <- Nullable 8192L
+    ()
+
   [<EntryPoint>]
   let main args =
     WebHostBuilder()
-      .UseKestrel(args)
+      .UseKestrel(configureKestrel)
       .UseStartup<Startup>()
       .Build()
       .Run()
