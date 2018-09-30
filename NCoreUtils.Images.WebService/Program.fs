@@ -8,7 +8,8 @@ module Program =
   let exitCode = 0
 
   let private configureKestrel (options : KestrelServerOptions) =
-    options.Limits.MaxResponseBufferSize <- Nullable 8192L
+    options.Limits.MaxResponseBufferSize <- Nullable 0L
+    // options.Limits.MaxRequestBufferSize  <- Nullable 32768L
     ()
 
   [<EntryPoint>]

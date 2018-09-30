@@ -45,8 +45,12 @@ type JpegoptimOptimization (logger : ILog<JpegoptimOptimization>) =
         // logger.LogDebug (null, sprintf "Executing jpegoptim on source (%d bytes)" input.Length)
         let stopwatch = Stopwatch ()
         stopwatch.Start ()
-        let! asyncOutput = async {
-          do! asyncCopyTo after output p.StandardOutput.BaseStream } |> Async.StartChildAsTask
+        let! asyncOutput =
+          async {
+            do! asyncCopyTo after output p.StandardOutput.BaseStream
+            do! output.AsyncFlush ()
+            output.Close () }
+          |> Async.StartChildAsTask
         let! asyncError = async {
           use buffer = new MemoryStream ()
           do! Stream.asyncCopyTo buffer p.StandardError.BaseStream

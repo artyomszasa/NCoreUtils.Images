@@ -116,12 +116,12 @@ type ImageResizer =
   member private this.TryGetOptimizationTransformation options imageType =
     let shouldOptimize = this.DecideOptimize options imageType
     match this.TryGetOptimizationsFor shouldOptimize imageType with
-    | [] -> None
+    | [] -> ValueNone
     | optimizations ->
       optimizations
       |> Seq.map (fun optimization -> optimization :> IStreamTransformation)
       |> Seq.reduce StreamTransformation.chain
-      |> Some
+      |> ValueSome
 
   member private this.CreateTransformation (options : ResizeOptions) =
     this.logger.LogDebug (null, sprintf "Processing options = %A" options)
