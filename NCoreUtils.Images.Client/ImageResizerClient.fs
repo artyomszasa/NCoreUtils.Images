@@ -242,7 +242,7 @@ type ImageResizerClient =
           return Error (TryNext error)
         | content ->
           let length = content.Headers.ContentLength
-          let ctype  = content.Headers.ContentType |> Option.wrap >>| (fun x -> x.ToString ()) |> Option.defaultValue null
+          let ctype  = content.Headers.ContentType |> Option.ofObj >>| (fun x -> x.ToString ()) |> Option.defaultValue null
           do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
           return Ok ()
       | FailedWithError error ->
