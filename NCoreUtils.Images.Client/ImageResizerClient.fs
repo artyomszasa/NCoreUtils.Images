@@ -5,11 +5,12 @@ open System.IO
 open System.Net
 open System.Net.Http
 open System.Net.Http.Headers
+open System.Runtime.ExceptionServices
+open System.Runtime.InteropServices
 open System.Text
 open NCoreUtils
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
-open System.Runtime.ExceptionServices
 
 type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
 type private SerializationException = System.Runtime.Serialization.SerializationException
@@ -196,42 +197,28 @@ module private ImageResizerClientHelpers =
     | Ok res -> res
     | Error (error : ImageResizerError) -> error.RaiseException ()
 
-// [<CompiledName("ImageResizerClientError")>]
-// module ImageResizerClientError =
-//
-//   [<CompiledName("RemoteError")>]
-//   let remoteError =
-//     { Error = "Remote resize operation failed."
-//       ErrorDescription = "Image resizer client was unable to perform operation due to remote error." }
-//
-// [<Serializable>]
-// type ImageResizerClientException =
-//   inherit ImageResizerException
-//   new () = { inherit ImageResizerException (ImageResizerClientError.remoteError)}
-//   new (message) = { inherit ImageResizerException (ImageResizerClientError.remoteError, message) }
-//   new (message : string, innerException) = { inherit ImageResizerException (ImageResizerClientError.remoteError, message, innerException) }
-//   new (info : System.Runtime.Serialization.SerializationInfo, context) = { inherit ImageResizerException (info, context) }
-
 [<Struct>]
 type private ErrorDesc =
   | TryNext of LastError:ImageResizerError
   | StopWithError of Error:ImageResizerError
 
 type ImageResizerClient =
-  val private configuration : ImageResizerClientConfiguration
-  val private logger        : ILog
-  new (configuration, logger : ILog<ImageResizerClient>) =
-    { configuration = configuration
-      logger        = logger }
+  val private configuration     : ImageResizerClientConfiguration
+  val private logger            : ILog
+  val private httpClientFactory : IHttpClientFactoryAdapter
+  new (configuration, logger : ILog<ImageResizerClient>, [<Optional; DefaultParameterValue(null:IHttpClientFactoryAdapter)>] httpClientFactory : IHttpClientFactoryAdapter) =
+    { configuration     = configuration
+      logger            = logger
+      httpClientFactory = httpClientFactory }
 
-  member private __.AsyncResInvokeResize (data : byte[], destination : IImageDestination, queryString : string, endpoint : string) = async {
+  member private this.AsyncResInvokeResize (data : byte[], destination : IImageDestination, queryString : string, endpoint : string) = async {
     let uri = UriBuilder(endpoint, Query = queryString).Uri
     try
       use  memoryStream          = new MemoryStream (data, false)
       use  requestMessageContent = new StreamContent (memoryStream)
       use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
       requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
-      use  httpClient            = new HttpClient ()
+      use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
       match status with
@@ -263,7 +250,7 @@ type ImageResizerClient =
       use  requestMessageContent = new StreamContent (memoryStream)
       use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
       requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
-      use  httpClient            = new HttpClient ()
+      use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.GetInfo"
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
       match status with

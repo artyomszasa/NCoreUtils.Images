@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.0.5</Version>
+    <Version>2.0.7</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -20,7 +20,7 @@
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.IO" Version="1.0.0-beta0" />
+    <PackageReference Include="NCoreUtils.IO" Version="2.0.2" />
     <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
   </ItemGroup>
 </Project>
