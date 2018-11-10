@@ -62,6 +62,8 @@ module private ImageHelpers =
     | :? (uint16[]) as ix -> ix |> Seq.map toString |> String.concat "," |> sprintf "u16[%s]"
     | :? (uint8[])  as ix -> ix |> Seq.map toString |> String.concat "," |> sprintf "u8[%s]"
     | :? Guid as guid -> guid.ToString ()
+    | :? Rational as r -> sprintf "f64[%f]" (float r.Numerator/ float r.Denominator)
+    | :? (Rational[]) as ra -> ra |> Seq.map (fun r ->  float r.Numerator / float r.Denominator |> sprintf "%f") |> String.concat "," |> sprintf "f64[%s]"
     | _ -> null
 
   let inline (|ImagickError|_|) (exn : exn) =
