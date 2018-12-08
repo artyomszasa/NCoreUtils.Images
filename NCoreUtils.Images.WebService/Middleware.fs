@@ -12,6 +12,7 @@ open NCoreUtils.Images
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
 open System.Runtime.ExceptionServices
+open System.Threading.Tasks
 
 type ServiceConfiguration () =
   member val MaxConcurrentOps = 20 with get, set
@@ -90,16 +91,71 @@ module internal Middleware =
       | exn                             -> ExceptionDispatchInfo.Capture(exn).Throw (); return Unchecked.defaultof<_> }
 
 
+  let private acquire (logger : ILogger) (target: bool ref) (semaphore : SemaphoreSlim) =
+    let job (cancellationToken : CancellationToken) =
+      // force setting value even if cancelled
+      let acquireTask = semaphore.WaitAsync cancellationToken
+      // on success
+      acquireTask.ContinueWith(
+        (fun (t : Task) ->
+          logger.LogInformation ("[counter = {0}] Successfully acquired lock.", semaphore.CurrentCount)
+          target := t.IsCompletedSuccessfully),
+        CancellationToken.None,
+        TaskContinuationOptions.OnlyOnRanToCompletion,
+        TaskScheduler.Current
+      ) |> ignore
+      // on failure
+      acquireTask.ContinueWith(
+        (fun (t : Task) ->
+          logger.LogInformation ("[counter = {0}] Failed to acquire lock.", semaphore.CurrentCount)
+          target := false),
+        CancellationToken.None,
+        TaskContinuationOptions.OnlyOnFaulted,
+        TaskScheduler.Current
+      ) |> ignore
+      // on cancelled
+      acquireTask.ContinueWith(
+        (fun (t : Task) ->
+          logger.LogInformation ("[counter = {0}] Acquiring lock has been cancelled.", semaphore.CurrentCount)
+          target := false),
+        CancellationToken.None,
+        TaskContinuationOptions.OnlyOnCanceled,
+        TaskScheduler.Current
+      ) |> ignore
+      // pass original task
+      acquireTask
+    Async.Adapt job
+
+
   let private resizeRes (semaphore : SemaphoreSlim) httpContext (imageResizer : IImageResizer) = async {
     let options = (HttpContext.request httpContext).Query |> readParameters
-    do! Async.Adapt (fun _ -> semaphore.WaitAsync (httpContext.RequestAborted))
+    let logger = getRequiredService<ILogger<Logger>> httpContext.RequestServices
+    logger.LogInformation ("[counter = {0}] Starting resize...", semaphore.CurrentCount)
+    let acquired = ref false
+    let released = ref 0
+    use _ =
+      httpContext.RequestAborted.Register
+        (fun () ->
+          match !acquired with
+          | true ->
+            if 0 = Interlocked.CompareExchange (released, 1, 0) then
+              let semCount = semaphore.Release()
+              logger.LogInformation ("[counter = {0}] Request aborted.", semCount + 1)
+          | false ->
+            logger.LogInformation ("[counter = {0}] Request aborted proior acquiring.", semaphore.CurrentCount)
+        )
     try
+      do! acquire logger acquired semaphore
       let dest = HttpContext.response httpContext |> HttpResponseDestination
       return! handle (fun () -> imageResizer.AsyncResize (httpContext.Request.Body, dest, options))
     finally
-      let logger = getRequiredService<ILogger<Logger>> httpContext.RequestServices
-      let semCount = semaphore.Release ()
-      logger.LogInformation ("Finished resizing, semaphore counter = {0}.", semCount) }
+      do
+        match !acquired && 0 = Interlocked.CompareExchange (released, 1, 0) with
+        | true ->
+          let semCount = semaphore.Release ()
+          logger.LogInformation ("[counter = {0}] Finished resizing.", semCount + 1)
+        | _ ->
+          logger.LogInformation ("[counter = {0}] No release needed.", semaphore.CurrentCount) }
 
   let private resize semaphore httpContext imageResizer = async {
     let! res = resizeRes semaphore httpContext imageResizer
