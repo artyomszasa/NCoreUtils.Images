@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.0.13</Version>
+    <Version>2.0.14</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -21,7 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.FSharp" Version="2.0.2" />
-    <PackageReference Include="NCoreUtils.IO" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.IO" Version="2.0.3-alpha1" />
     <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
   </ItemGroup>
 </Project>

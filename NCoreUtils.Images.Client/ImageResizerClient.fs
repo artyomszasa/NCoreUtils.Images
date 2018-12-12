@@ -11,6 +11,7 @@ open System.Text
 open NCoreUtils
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
+open System.Runtime.CompilerServices
 
 type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
 type private SerializationException = System.Runtime.Serialization.SerializationException
@@ -164,6 +165,7 @@ module private ImageResizerClientHelpers =
   [<Struct>]
   type ResponseInfo =
     | Succeeded
+    | Retry
     | Failed
     | FailedWithError of Error:ImageResizerError
 
@@ -196,6 +198,21 @@ module private ImageResizerClientHelpers =
     match res with
     | Ok res -> res
     | Error (error : ImageResizerError) -> error.RaiseException ()
+
+  let rec private isBrokenPipe (exn : exn) =
+    match exn with
+    | :? Sockets.SocketException as socketExn ->
+      match socketExn.Message.IndexOf ("broken pipe", StringComparison.OrdinalIgnoreCase) with
+      | -1 -> None
+      | _  -> Some ()
+    | :? AggregateException as aggregateExn -> aggregateExn.InnerExceptions |> Seq.tryPick isBrokenPipe
+    | _ ->
+    match exn.InnerException with
+    | null     -> None
+    | innerExn -> isBrokenPipe innerExn
+
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let internal (|IsBrokenPipe|_|) exn = isBrokenPipe exn
 
 [<Struct>]
 type private ErrorDesc =
@@ -239,7 +256,13 @@ type ImageResizerClient =
           | _                       -> Error (TryNext error)
       | _ ->
         return Error (TryNext (genericRemoteError uri.AbsoluteUri (int responseMessage.StatusCode)))
-    with exn -> return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
+    with
+      | IsBrokenPipe as exn ->
+        // retry on broken pipe...
+        this.logger.LogWarning (exn, "Failed to perform operation due to connection error, retrying...")
+        return! this.AsyncResInvokeResize (data, destination, queryString, endpoint)
+      | exn ->
+        return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
 
   member private this.AsyncResInvokeGetInfo (data : byte[], endpoint : string) = async {
     let uriBuilder = UriBuilder endpoint;
