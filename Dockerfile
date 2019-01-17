@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.1-sdk AS build-env-ncimages
+FROM microsoft/dotnet:2.2-sdk AS build-env-ncimages
 WORKDIR /app
 COPY ./NCoreUtils.Images.sln ./
 COPY ./NCoreUtils.Images/*.fsproj ./NCoreUtils.Images/
@@ -25,7 +25,7 @@ RUN dotnet publish NCoreUtils.Images.WebService/NCoreUtils.Images.WebService.fsp
 
 # RUNTIME IMAGE
 
-FROM microsoft/dotnet:2.1-runtime-deps
+FROM microsoft/dotnet:2.2-runtime-deps
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils
 # install imagemagick dependencies
 RUN apt-get update \

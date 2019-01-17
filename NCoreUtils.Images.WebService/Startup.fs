@@ -14,22 +14,7 @@ open Newtonsoft.Json.Serialization
 open System.Threading
 open NCoreUtils.Images.Optimization
 
-type Startup () =
-
-  static let mutable counter = 0L
-
-  static let forceGC (httpContext : HttpContext) (asyncNext : Async<unit>) = async {
-    do! asyncNext
-    let _count = Interlocked.Increment (&counter)
-    // if 0L = count % 32L then
-    let logger = httpContext.RequestServices.GetRequiredService<ILogger<Startup>> ()
-    logger.LogInformation (sprintf "Forced garbage collection started (GC memory = %d bytes)" (System.GC.GetTotalMemory false))
-    System.Runtime.GCSettings.LargeObjectHeapCompactionMode <- System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-    System.GC.Collect ()
-    System.GC.WaitForPendingFinalizers ()
-    System.GC.Collect ()
-    System.GC.WaitForPendingFinalizers ()
-    logger.LogInformation (sprintf "Forced garbage collection ended (GC memory = %d bytes)" (System.GC.GetTotalMemory false)) }
+type Startup (env : IHostingEnvironment) =
 
   member __.ConfigureServices (services: IServiceCollection) =
     let configuration = Config.buildConfig ()
@@ -49,7 +34,14 @@ type Startup () =
         services.AddSingleton<ServiceConfiguration> (ServiceConfiguration (MaxConcurrentOps = 20)) |> ignore
     services
       .AddSingleton<IConfiguration>(configuration)
-      .AddLogging(fun b -> b.ClearProviders().SetMinimumLevel(LogLevel.Information) |> ignore)
+      .AddLogging(fun b ->
+        b.ClearProviders()
+          .SetMinimumLevel(LogLevel.Information)
+          |> ignore
+        match env.IsDevelopment () with
+        | true -> b.AddConsole () |> ignore
+        | _    -> b.AddGoogleSink (configuration.GetSection "Google") |> ignore
+      )
       .AddPrePopulatedLoggingContext()
       .AddSingleton(JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ()))
       .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
@@ -57,10 +49,7 @@ type Startup () =
       .AddImageMagickResizer()
       |> ignore
 
-  member __.Configure (app: IApplicationBuilder, env: IHostingEnvironment, loggerFactory : ILoggerFactory, configuration : IConfiguration, httpContextAccessor : IHttpContextAccessor, serviceConfiguration : ServiceConfiguration) =
-    match env.IsDevelopment () with
-    | true -> loggerFactory.AddConsole (LogLevel.Trace) |> ignore
-    | _    -> loggerFactory.AddGoogleSink (httpContextAccessor, configuration.GetSection "Google") |> ignore
+  member __.Configure (app: IApplicationBuilder, serviceConfiguration : ServiceConfiguration) =
     let semaphore = new SemaphoreSlim (serviceConfiguration.MaxConcurrentOps, serviceConfiguration.MaxConcurrentOps)
 
     ImageMagick.MagickNET.SetLogEvents ImageMagick.LogEvents.None
