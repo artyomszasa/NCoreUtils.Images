@@ -29,7 +29,7 @@ type ImageDestinationExtensions =
   static member WriteAsync (this : IImageDestination, contentInfo, generator : Func<Stream, CancellationToken, Task>, cancellationToken) =
     match this with
     | :? AsyncImageDestination as inst -> inst.WriteDirect (contentInfo, generator, cancellationToken)
-    | _                           ->
+    | _  ->
       let gen stream = Async.Adapt (fun cancellationToken -> generator.Invoke (stream, cancellationToken))
       Async.StartAsTask (this.AsyncWrite (contentInfo, gen), cancellationToken = cancellationToken) :> _
 
@@ -56,7 +56,8 @@ module ImageResizerExt =
 
   type IImageResizer with
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-    member this.AsyncResize (source : Stream, destinationStream : Stream, options) = this.AsyncResize (source, StreamDestination destinationStream, options)
+    member this.AsyncResize (source : Stream, destinationStream : Stream, options) =
+      this.AsyncResize (source, StreamDestination destinationStream, options)
 
     member this.AsyncResize (path : string, destination : IImageDestination, options) = async {
       use stream = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, true)
@@ -66,14 +67,16 @@ module ImageResizerExt =
       try
         do! this.AsyncResize (path, destination, options)
         return Ok ()
-      with e ->
-        return ImageResizerError.generic (e.GetType().Name) e.Message |> Error }
+      with
+      | e -> return ImageResizerError.generic (e.GetType().Name) e.Message |> Error }
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-    member this.AsyncResResize (source : Stream, destinationStream : Stream, options) = this.AsyncResResize (source, StreamDestination destinationStream, options)
+    member this.AsyncResResize (source : Stream, destinationStream : Stream, options) =
+      this.AsyncResResize (source, StreamDestination destinationStream, options)
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-    member this.AsyncResResize (path : string, destinationStream : Stream, options) = this.AsyncResResize (path, StreamDestination destinationStream, options)
+    member this.AsyncResResize (path : string, destinationStream : Stream, options) =
+      this.AsyncResResize (path, StreamDestination destinationStream, options)
 
 [<Extension>]
 [<Sealed; AbstractClass>]
