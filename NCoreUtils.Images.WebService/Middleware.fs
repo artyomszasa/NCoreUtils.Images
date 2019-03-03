@@ -13,10 +13,16 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
 open System.Runtime.ExceptionServices
 open System.Threading.Tasks
+open NCoreUtils.IO
 
 type ServiceConfiguration () =
   member val MaxConcurrentOps = 20 with get, set
   override this.ToString () = sprintf "ServiceConfiguration[MaxConcurrentOps = %d]" this.MaxConcurrentOps
+
+type ResizerServices = {
+  Resizer              : IImageResizer
+  SourceExtractor      : IImageSourceExtractor
+  DestinationExtractor : IImageDestinationExtractor }
 
 module internal Middleware =
 
@@ -79,9 +85,21 @@ module internal Middleware =
       weightX    = i "cx",
       weightY    = i "cy")
 
-  let info httpContext (imageResizer : IImageResizer) =
-    HttpContext.requestBody httpContext
-    |> imageResizer.AsyncGetImageInfo
+  let private extractSource httpContext (sourceExtractor : IImageSourceExtractor) = async {
+    match! sourceExtractor.AsyncExtractImageSource httpContext with
+    | ValueSome extractor -> return! extractor.AsyncCreateProducer ()
+    | ValueNone           -> return  StreamProducer.ofStreamWithCleanUp httpContext.Request.Body false }
+
+  let private extractDestination httpContext (destinationExtractor : IImageDestinationExtractor) = async {
+    match! destinationExtractor.AsyncExtractImageDestination httpContext with
+    | ValueSome destination -> return destination
+    | ValueNone             ->
+      return! DefaultImageDestinationExtractor.SharedInstance.AsyncExtractImageDestination httpContext
+      >>| ValueOption.get }
+
+  let info httpContext { Resizer = imageResizer; SourceExtractor = sourceExtractor } =
+    extractSource httpContext sourceExtractor
+    >>= imageResizer.AsyncGetImageInfo
     >>= json httpContext
 
   let handle (computation : unit -> Async<_>) = async {
@@ -127,7 +145,7 @@ module internal Middleware =
     Async.Adapt job
 
 
-  let private resizeRes (semaphore : SemaphoreSlim) httpContext (imageResizer : IImageResizer) = async {
+  let private resizeRes (semaphore : SemaphoreSlim) httpContext { Resizer = imageResizer; SourceExtractor = sourceExtractor; DestinationExtractor = destinationExtractor } = async {
     let options = (HttpContext.request httpContext).Query |> readParameters
     let logger = getRequiredService<ILogger<Logger>> httpContext.RequestServices
     logger.LogInformation ("[counter = {0}] Starting resize...", semaphore.CurrentCount)
@@ -146,8 +164,9 @@ module internal Middleware =
         )
     try
       do! acquire logger acquired semaphore
-      let dest = HttpContext.response httpContext |> HttpResponseDestination
-      return! handle (fun () -> imageResizer.AsyncResize (httpContext.Request.Body, dest, options))
+      let! source      = extractSource      httpContext sourceExtractor
+      let! destination = extractDestination httpContext destinationExtractor
+      return! handle (fun () -> imageResizer.AsyncResize (source, destination, options))
     finally
       do
         match !acquired && 0 = Interlocked.CompareExchange (released, 1, 0) with
@@ -179,10 +198,14 @@ module internal Middleware =
     match HttpContext.path httpContext with
     | [] ->
       match HttpContext.httpMethod httpContext with
-      | HttpMethod.HttpPost -> getService<IImageResizer> httpContext.RequestServices |> resize semaphore httpContext
+      | HttpMethod.HttpPost -> bindServices<ResizerServices> httpContext.RequestServices |> resize semaphore httpContext
       | _                   -> async405 httpContext
     | [ CI "info" ] ->
       match HttpContext.httpMethod httpContext with
-      | HttpMethod.HttpPost -> getService<IImageResizer> httpContext.RequestServices |> info httpContext
+      | HttpMethod.HttpPost -> bindServices<ResizerServices> httpContext.RequestServices |> info httpContext
+      | _                   -> async405 httpContext
+    | [ CI "capabilities" ] ->
+      match HttpContext.httpMethod httpContext with
+      | HttpMethod.HttpGet  -> json httpContext [| Capabilities.serializedImageInfo |]
       | _                   -> async405 httpContext
     | _ -> asyncNext

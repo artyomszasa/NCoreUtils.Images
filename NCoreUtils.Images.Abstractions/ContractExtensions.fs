@@ -7,8 +7,28 @@ open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open NCoreUtils
+open NCoreUtils.IO
 
 // EXTENSIONS
+
+[<Extension>]
+[<Sealed; AbstractClass>]
+type ImageSourceExtensions =
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member CreateProducer (this : IImageSource) =
+    match this with
+    | :? AsyncImageSource as inst -> inst.CreateProducerDirect(CancellationToken.None).Result
+    | _                           -> this.AsyncCreateProducer() |> Async.RunSynchronously
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member CreateProducerAsync (this : IImageSource, [<Optional>] cancellationToken : CancellationToken) =
+    match this with
+    | :? AsyncImageSource as inst -> inst.CreateProducerDirect cancellationToken
+    | _                           -> Async.StartAsTask (this.AsyncCreateProducer (), cancellationToken = cancellationToken)
+
 
 [<Extension>]
 [<Sealed; AbstractClass>]
@@ -46,6 +66,12 @@ type ImageDestinationExtensions =
 [<AutoOpen>]
 module ImageResizerExt =
 
+  let private producerOfStream stream =
+    { new IStreamProducer with
+        member __.AsyncProduce output = Stream.asyncCopyTo output stream
+        member __.Dispose () = ()
+    }
+
   [<Sealed>]
   type internal StreamDestination (stream : Stream) =
     do if isNull stream then ArgumentNullException "stream" |> raise
@@ -55,6 +81,23 @@ module ImageResizerExt =
 
 
   type IImageResizer with
+
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member this.AsyncResize (source : IStreamProducer, destinationStream : Stream, options) =
+      this.AsyncResize (source, StreamDestination destinationStream, options)
+
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member this.AsyncResResize (source : IStreamProducer, destinationStream : Stream, options) =
+      this.AsyncResResize (source, StreamDestination destinationStream, options)
+
+    // ****** Stream as input **********************
+
+    member this.AsyncResize (source : Stream, destination : IImageDestination, options) = async {
+      use producer =
+        // NOTE: source is not disposed!
+        StreamProducer.Of (fun destination -> Stream.asyncCopyTo destination source)
+      do! this.AsyncResize (producer, destination, options) }
+
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.AsyncResize (source : Stream, destinationStream : Stream, options) =
       this.AsyncResize (source, StreamDestination destinationStream, options)
@@ -69,6 +112,12 @@ module ImageResizerExt =
         return Ok ()
       with
       | e -> return ImageResizerError.generic (e.GetType().Name) e.Message |> Error }
+
+    member this.AsyncResResize (source : Stream, destination : IImageDestination, options) = async {
+      use producer =
+        // NOTE: source is not disposed!
+        StreamProducer.Of (fun destination -> Stream.asyncCopyTo destination source)
+      return! this.AsyncResResize (producer, destination, options) }
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.AsyncResResize (source : Stream, destinationStream : Stream, options) =
@@ -146,10 +195,15 @@ type ImageResizerExtensions =
     Async.StartAsTask (this.AsyncResize (path, destination, options), cancellationToken = cancellationToken) :> Task
 
   [<Extension>]
-  static member ResizeAsync (this : IImageResizer, source : Stream, destination : IImageDestination, options, [<Optional>] cancellationToken) =
+  static member ResizeAsync (this : IImageResizer, source : IStreamProducer, destination : IImageDestination, options, [<Optional>] cancellationToken) =
     match this with
     | :? AsyncImageResizer as inst -> inst.ResizeDirect (source, destination, options, cancellationToken)
     | _                            -> Async.StartAsTask (this.AsyncResize (source, destination, options), cancellationToken = cancellationToken) :> _
+
+  [<Extension>]
+  static member ResizeAsync (this : IImageResizer, source : Stream, destination : IImageDestination, options, [<Optional>] cancellationToken) =
+    Async.StartAsTask (this.AsyncResize (source, destination, options), cancellationToken = cancellationToken)
+    :> Task
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
@@ -167,9 +221,19 @@ type ImageResizerExtensions =
     Async.StartAsTask (this.AsyncResResize (source, destination, options) >>| AsyncResult.FromResult, cancellationToken = cancellationToken) :> Task
 
   [<Extension>]
+  static member TryResizeAsync (this : IImageResizer, source : IStreamProducer, destination : IImageDestination, options, [<Optional>] cancellationToken) =
+    match this with
+    | :? AsyncImageResizer as inst -> inst.TryResizeDirect (source, destination, options, cancellationToken)
+    | _ ->
+      let computation =
+        this.AsyncResResize (source, destination, options)
+        >>| AsyncResult.FromResult
+      Async.StartAsTask (computation, cancellationToken = cancellationToken)
+
+  [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   static member TryResizeAsync (this : IImageResizer, source : Stream, destination : IImageDestination, options, [<Optional>] cancellationToken) =
-    Async.StartAsTask (this.AsyncResResize (source, destination, options) >>| AsyncResult.FromResult, cancellationToken = cancellationToken) :> Task
+    Async.StartAsTask (this.AsyncResResize (source, destination, options) >>| AsyncResult.FromResult, cancellationToken = cancellationToken)
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]

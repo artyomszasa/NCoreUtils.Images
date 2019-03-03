@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <IsPackable>False</IsPackable>
-    <Version>2.0.16</Version>
+    <Version>2.1.0-alpha2</Version>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
@@ -15,10 +15,6 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Google.Api.Gax" Version="2.5.0" />
-    <PackageReference Include="Google.Apis" Version="1.36.1" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.36.1" />
-    <PackageReference Include="Google.Apis.Core" Version="1.36.1" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
@@ -38,6 +34,8 @@
     <ProjectReference Include="..\NCoreUtils.Images.ImageMagick\NCoreUtils.Images.ImageMagick.fsproj" />
     <ProjectReference Include="..\NCoreUtils.Images.WebService.Shared\NCoreUtils.Images.WebService.Shared.fsproj" />
     <ProjectReference Include="..\NCoreUtils.Images.Optimization.External\NCoreUtils.Images.Optimization.External.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.Internal\NCoreUtils.Images.Internal.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.Internal.GoogleCloudStorage\NCoreUtils.Images.Internal.GoogleCloudStorage.fsproj" />
   </ItemGroup>
   <Target Name="DockerBuild">
     <!-- Ensure properties -->

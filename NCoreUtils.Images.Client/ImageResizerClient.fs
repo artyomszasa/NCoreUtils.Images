@@ -12,6 +12,9 @@ open NCoreUtils
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
 open System.Runtime.CompilerServices
+open NCoreUtils.IO
+open System.Collections.Generic
+open System.Collections.Immutable
 
 type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
 type private SerializationException = System.Runtime.Serialization.SerializationException
@@ -153,14 +156,21 @@ module private ImageResizerClientHelpers =
     |> appendn first "cy" options.WeightY
     |> builderToString
 
-  // FIXME: use unified solution
-  let toByteArray (stream : Stream) =
-    match stream with
-    | :? MemoryStream as memoryStream -> memoryStream.ToArray ()
-    | _ ->
-      use memoryStream = new MemoryStream ()
-      stream.CopyTo memoryStream
-      memoryStream.ToArray ()
+  let toByteArrayAsync (source : IStreamProducer) =
+    let consumer =
+      { new IStreamConsumer<byte[]> with
+          member __.AsyncConsume stream =
+            match stream with
+            | :? MemoryStream as memoryStream -> memoryStream.ToArray () |> async.Return
+            | _ ->
+              async {
+                use memoryStream = new MemoryStream ()
+                do! Stream.asyncCopyTo memoryStream stream
+                return memoryStream.ToArray () }
+          member __.Dispose () = ()
+      }
+    StreamToResultConsumer.asyncConsumeProducer source consumer
+
 
   [<Struct>]
   type ResponseInfo =
@@ -228,13 +238,50 @@ type ImageResizerClient =
       logger            = logger
       httpClientFactory = httpClientFactory }
 
-  member private this.AsyncResInvokeResize (data : byte[], destination : IImageDestination, queryString : string, endpoint : string) = async {
+  member private this.AsyncGetCapabilities (endpoint : string) = async {
+    let uriBuilder = UriBuilder endpoint
+    uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "capabilities" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "capabilities" else uriBuilder.Path + "/capabilities")
+    let uri = uriBuilder.Uri
+    try
+      use  httpClient = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
+      let! response   = Async.Adapt (fun _ -> httpClient.GetStringAsync uri)
+      return JsonConvert.DeserializeObject<string[]> response |> Set.ofArray
+    with _ ->
+      return Set.empty }
+
+  member private __.AsyncGetSourceData (source : IStreamProducer, capabilities) =
+    match source with
+    | :? ISerializableImageProducer as psource when Set.contains Capabilities.serializedImageInfo capabilities ->
+      psource.AsyncSerialize ()
+    | _ ->
+      async {
+        let! body = toByteArrayAsync source
+        return
+          { Body = body
+            Info = null } }
+
+  member private __.AsyncGetDestinationData (destination : IImageDestination, capabilities) =
+    match destination with
+    | :? ISerializableImageDestination as psource when Set.contains Capabilities.serializedImageInfo capabilities ->
+      psource.AsyncSerialize ()
+    | _ -> async.Return null
+
+  member private this.AsyncResInvokeResize (source, destination : IImageDestination, queryString : string, endpoint : string) = async {
     let uri = UriBuilder(endpoint, Query = queryString).Uri
     try
-      use  memoryStream          = new MemoryStream (data, false)
-      use  requestMessageContent = new StreamContent (memoryStream)
+      let! capabilities          = this.AsyncGetCapabilities endpoint
+      let! sourceData            = this.AsyncGetSourceData (source, capabilities)
+      let! destinationData       = this.AsyncGetDestinationData (destination, capabilities)
+      let  body                  = if isNull sourceData.Body then Array.empty else sourceData.Body
+      use  requestMessageContent = new StreamContent (new MemoryStream (body, 0, body.Length, false, true))
       use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
       requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+      if not (isNull sourceData.Info) then
+        for kv in sourceData.Info do
+          requestMessage.Headers.Add (sprintf "X-%s" kv.Key, kv.Value)
+      if not (isNull destinationData) then
+        for kv in destinationData do
+          requestMessage.Headers.Add (sprintf "X-%s" kv.Key, kv.Value)
       use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
@@ -242,12 +289,19 @@ type ImageResizerClient =
       | Succeeded ->
         match responseMessage.Content with
         | null ->
-          let error = emptyResponseError uri.AbsoluteUri
-          return Error (TryNext error)
+          return (
+            // If there is destination data, response may be empty.
+            match destinationData with
+            | null ->
+              let error = emptyResponseError uri.AbsoluteUri
+              Error (TryNext error)
+            | _ -> Ok ())
         | content ->
-          let length = content.Headers.ContentLength
-          let ctype  = content.Headers.ContentType |> Option.ofObj >>| (fun x -> x.ToString ()) |> Option.defaultValue null
-          do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
+          // If there is destination data, response is irrelevant
+          if isNull destinationData then
+            let length = content.Headers.ContentLength
+            let ctype  = content.Headers.ContentType |> Option.ofObj >>| (fun x -> x.ToString ()) |> Option.defaultValue null
+            do! destination.AsyncWrite (ContentInfo (length, ctype), fun stream -> content.AsyncReadAsStream () >>= Stream.asyncCopyTo stream)
           return Ok ()
       | FailedWithError error ->
         return
@@ -260,19 +314,24 @@ type ImageResizerClient =
       | IsBrokenPipe as exn ->
         // retry on broken pipe...
         this.logger.LogWarning (exn, "Failed to perform operation due to connection error, retrying...")
-        return! this.AsyncResInvokeResize (data, destination, queryString, endpoint)
+        return! this.AsyncResInvokeResize (source, destination, queryString, endpoint)
       | exn ->
         return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
 
-  member private this.AsyncResInvokeGetInfo (data : byte[], endpoint : string) = async {
-    let uriBuilder = UriBuilder endpoint;
+  member private this.AsyncResInvokeGetInfo (source, endpoint : string) = async {
+    let uriBuilder = UriBuilder endpoint
     uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "info" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "info" else uriBuilder.Path + "/info")
     let uri = uriBuilder.Uri
     try
-      use  memoryStream          = new MemoryStream (data, false)
-      use  requestMessageContent = new StreamContent (memoryStream)
+      let! capabilities          = this.AsyncGetCapabilities endpoint
+      let! requestData           = this.AsyncGetSourceData (source, capabilities)
+      let  body                  = if isNull requestData.Body then Array.empty else requestData.Body
+      use  requestMessageContent = new StreamContent (new MemoryStream (body, 0, body.Length, false, true))
       use  requestMessage        = new HttpRequestMessage (HttpMethod.Post, uri, Content = requestMessageContent)
       requestMessageContent.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/octet-stream"
+      if not (isNull requestData.Info) then
+        for kv in requestData.Info do
+          requestMessage.Headers.Add (sprintf "X-%s" kv.Key, kv.Value)
       use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.GetInfo"
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
@@ -306,55 +365,54 @@ type ImageResizerClient =
         return Error (TryNext (genericRemoteError uri.AbsoluteUri (int responseMessage.StatusCode)))
     with exn -> return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
 
-
-  member this.AsyncResResize (source : Stream, destination : IImageDestination, options : ResizeOptions) =
+  member this.AsyncResResize (source : IStreamProducer, destination : IImageDestination, options : ResizeOptions) =
     let queryString = createQueryString options
-    let data = toByteArray source
-    let rec doInvoke lastErr endpoints = async {
+    let rec doInvoke source lastErr endpoints = async {
       match endpoints with
       | [] -> return lastErr |> Option.defaultValue noEndpointsError |> Error
       | e::es ->
-        let! res = this.AsyncResInvokeResize (data, destination, queryString, e)
+        let! res = this.AsyncResInvokeResize (source, destination, queryString, e)
         match res with
         | Ok () -> return Ok ()
         | Error (TryNext err) ->
           this.logger.LogWarning (null, err.Description)
-          return! doInvoke (Some err) es
+          return! doInvoke source (Some err) es
         | Error (StopWithError err) -> return Error err }
-    doInvoke None (List.ofArray this.configuration.EndPoints)
+    doInvoke source None (List.ofArray this.configuration.EndPoints)
 
   member this.AsyncResResize (source : string, destination, options) = async {
-    use stream = new FileStream (source, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous ||| FileOptions.SequentialScan)
-    return! this.AsyncResResize (stream, destination, options) }
+    use producer =
+      new FileStream (source, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous ||| FileOptions.SequentialScan)
+      |> StreamProducer.ofStream
+    return! this.AsyncResResize (producer, destination, options) }
 
-  member this.AsyncResize (source : Stream, destination, options) =
-    this.AsyncResResize (source, destination, options)
+  member this.AsyncResize (producer : IStreamProducer, destination, options) =
+    this.AsyncResResize (producer, destination, options)
     >>| getResult
 
   member this.AsyncResize (source : string, destination, options) =
     this.AsyncResResize (source, destination, options)
     >>| getResult
 
-  member this.AsyncResGetImageInfo (source : Stream) =
-    let data = toByteArray source
-    let rec doInvoke lastErr endpoints = async {
+  member this.AsyncResGetImageInfo (source : IStreamProducer) =
+    let rec doInvoke source lastErr endpoints = async {
       match endpoints with
       | [] -> return lastErr |> Option.defaultValue noEndpointsError |> Error
       | e::es ->
-        let! res = this.AsyncResInvokeGetInfo (data, e)
+        let! res = this.AsyncResInvokeGetInfo (source, e)
         match res with
         | Ok info -> return Ok info
         | Error (TryNext err) ->
           this.logger.LogWarning (null, err.Description)
-          return! doInvoke (Some err) es
+          return! doInvoke source (Some err) es
         | Error (StopWithError err) -> return Error err }
-    doInvoke None (List.ofArray this.configuration.EndPoints)
+    doInvoke source None (List.ofArray this.configuration.EndPoints)
 
-  member this.AsyncGetImageInfo (source : Stream) =
+  member this.AsyncGetImageInfo (source : IStreamProducer) =
     this.AsyncResGetImageInfo source
     >>| getResult
 
   interface IImageResizer with
-    member this.AsyncResize (source : Stream, destination, options) = this.AsyncResize (source, destination, options)
-    member this.AsyncResResize (source : Stream, destination, options) = this.AsyncResResize (source, destination, options)
+    member this.AsyncResize (source : IStreamProducer, destination, options) = this.AsyncResize (source, destination, options)
+    member this.AsyncResResize (source : IStreamProducer, destination, options) = this.AsyncResResize (source, destination, options)
     member this.AsyncGetImageInfo source = this.AsyncGetImageInfo source

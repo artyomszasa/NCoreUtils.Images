@@ -140,6 +140,7 @@ type ImageResizer =
                 | Ok imageType -> imageType
               // setContentType <| ImageType.toMediaType imageType
               let output = dependentOutput imageType
+
               let resizer = factory.CreateResizer (image, options)
               image.Resize resizer
               let quality = this.DecideQuality options imageType
@@ -148,22 +149,24 @@ type ImageResizer =
               output.Close () }
         }
 
-  member this.AsyncResize (input : Stream, destination : IImageDestination, options) =
+  member this.AsyncResize (input : IStreamProducer, destination : IImageDestination, options) =
     destination.AsyncWriteDelayed
       (fun setContentInfo output -> async {
         let resizeTransformation = this.CreateTransformation options
         use pipeline =
-          StreamTransformation.chainDependent
-            resizeTransformation
-            (fun imageType ->
-              setContentInfo <| ContentInfo (contentType = ImageType.toMediaType imageType)
-              this.TryGetOptimizationTransformation options imageType
-            )
-        do! pipeline.AsyncPerform (input, output)
-        do! output.AsyncFlush ()
+          let inner =
+            StreamTransformation.chainDependent
+              resizeTransformation
+              (fun imageType ->
+                setContentInfo <| ContentInfo (contentType = ImageType.toMediaType imageType)
+                this.TryGetOptimizationTransformation options imageType
+              )
+          StreamTransformation.chainProducer inner input
+        do! StreamProducer.asyncProduce output pipeline
+        output.Close ()
       })
 
-  member this.AsyncResResize (input : Stream, destination : IImageDestination, options) = async {
+  member this.AsyncResResize (input : IStreamProducer, destination : IImageDestination, options) = async {
     try
       do! this.AsyncResize (input, destination, options)
       return Ok ()
@@ -171,15 +174,16 @@ type ImageResizer =
       return ImageResizerError.generic (e.GetType().Name) e.Message |> Error }
 
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member this.AsyncGetImageInfo stream = async {
-    this.logger.LogDebug (null, "Getting image information.")
-    use! image = this.provider.AsyncFromStream stream
-    let info = image.GetImageInfo ()
-    printfn "%A" info
-    this.logger.LogDebug (null, "Successfully retrieved image information.")
-    return info }
+  member this.AsyncGetImageInfo (source : IStreamProducer) = async {
+    let consumer =
+      { new IStreamConsumer<_> with
+          member __.AsyncConsume input = this.provider.AsyncFromStream input
+          member __.Dispose () = ()
+      }
+    use! image = StreamToResultConsumer.asyncConsumeProducer source consumer
+    return image.GetImageInfo () }
 
   interface IImageResizer with
-    member this.AsyncResize    (source : Stream, destination, options) = this.AsyncResize    (source, destination, options)
-    member this.AsyncResResize (source : Stream, destination, options) = this.AsyncResResize (source, destination, options)
+    member this.AsyncResize    (source : IStreamProducer, destination, options) = this.AsyncResize    (source, destination, options)
+    member this.AsyncResResize (source : IStreamProducer, destination, options) = this.AsyncResResize (source, destination, options)
     member this.AsyncGetImageInfo stream = this.AsyncGetImageInfo stream

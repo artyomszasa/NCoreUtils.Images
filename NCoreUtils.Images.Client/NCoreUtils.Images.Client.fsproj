@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.0.16</Version>
+    <Version>2.1.0-alpha2</Version>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -19,6 +19,7 @@
     <ProjectReference Include="..\NCoreUtils.Images.WebService.Shared\NCoreUtils.Images.WebService.Shared.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NCoreUtils.IO" Version="2.0.3-alpha3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
 </Project>

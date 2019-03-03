@@ -11,10 +11,19 @@ open NCoreUtils.Logging
 open NCoreUtils.Images
 open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
+open System
 open System.Threading
 open NCoreUtils.Images.Optimization
 
 type Startup (env : IHostingEnvironment) =
+
+  static let configureSourceExtractors =
+    Action<CompositeImageSourceExtractorBuilder>
+      (fun builder -> builder.AddExtractor<GoogleCloudStorageSourceExtractor> () |> ignore)
+
+  static let configureDestinationExtractors =
+    Action<CompositeImageDestinationExtractorBuilder>
+      (fun builder -> builder.AddExtractor<GoogleCloudStorageDestinationExtractor> () |> ignore)
 
   member __.ConfigureServices (services: IServiceCollection) =
     let configuration = Config.buildConfig ()
@@ -46,6 +55,8 @@ type Startup (env : IHostingEnvironment) =
       .AddSingleton(JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ()))
       .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
       .AddSingletonImageOptimization<JpegoptimOptimization>()
+      .AddImageSourceExtractors(configureSourceExtractors)
+      .AddImageDestinationExtractors(configureDestinationExtractors)
       .AddImageMagickResizer()
       |> ignore
 
