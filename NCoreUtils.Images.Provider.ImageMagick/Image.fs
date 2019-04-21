@@ -9,6 +9,14 @@ open NCoreUtils
 open NCoreUtils.Images
 open NCoreUtils.Images.Internal
 open System.Threading
+open ImageMagick
+
+[<CompiledName("RectangleHelpers")>]
+[<RequireQualifiedAccess>]
+module private Rectangle =
+
+  let toMagickGeometry (rect : Rectangle) =
+    MagickGeometry (rect.X, rect.Y, rect.Width, rect.Height)
 
 [<AutoOpen>]
 module private ImageHelpers =
@@ -150,7 +158,10 @@ and
       this.native.Resize (size.Width, size.Height)
     member this.Crop (rect : Rectangle) =
       this.ThrowIfDisposed ()
-      this.native.Crop (rect.X, rect.Y, rect.Width, rect.Height)
+      rect
+        |> Rectangle.toMagickGeometry
+        |> this.native.Crop
+      this.native.RePage ()
     member this.GetImageInfo () : ImageInfo =
       this.ThrowIfDisposed ()
       let iptc = this.native.GetIptcProfile ()

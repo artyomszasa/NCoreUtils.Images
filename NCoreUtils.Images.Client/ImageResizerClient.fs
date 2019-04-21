@@ -243,10 +243,15 @@ type ImageResizerClient =
     uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "capabilities" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "capabilities" else uriBuilder.Path + "/capabilities")
     let uri = uriBuilder.Uri
     try
-      use  httpClient = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
-      let! response   = Async.Adapt (fun _ -> httpClient.GetStringAsync uri)
-      return JsonConvert.DeserializeObject<string[]> response |> Set.ofArray
-    with _ ->
+      use  httpClient  = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
+      let! response    = Async.Adapt (fun _ -> httpClient.GetStringAsync uri)
+      let capabilities = JsonConvert.DeserializeObject<string[]> response
+      let message      = capabilities |> String.concat ", " |> sprintf "%s supports following extensions: %s" endpoint
+      this.logger.LogDebug (null, message)
+      return Set.ofArray capabilities
+    with e ->
+      let message = sprintf "Querying extensions from %s failed (%s), assuming no extensions supported" endpoint e.Message
+      this.logger.LogDebug (null, message)
       return Set.empty }
 
   member private __.AsyncGetSourceData (source : IStreamProducer, capabilities) =

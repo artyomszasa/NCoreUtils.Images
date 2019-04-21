@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.1.0-alpha2</Version>
+    <Version>2.2.0-alpha0</Version>
+    <NoWarn>FS2003</NoWarn>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -19,12 +20,16 @@
     <Compile Include="ContractExtensions.fs" />
     <Compile Include="Internal.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="1.0.1" />
-    <PackageReference Include="NCoreUtils.FSharp" Version="2.0.2" />
-    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="2.0.3-alpha3" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0-alpha0" />
+    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="2.1.0-alpha0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+    <PackageReference Update="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <PackageReference Update="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.1.0-alpha2</Version>
+    <Version>2.2.0-alpha0</Version>
+    <NoWarn>FS2003</NoWarn>
   </PropertyGroup>
   <!-- mono fix -->
   <PropertyGroup>
@@ -20,8 +21,11 @@
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.FSharp" Version="2.0.2" />
-    <PackageReference Include="NCoreUtils.IO" Version="2.0.3-alpha3" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0-alpha0" />
+    <PackageReference Include="NCoreUtils.IO" Version="2.1.0-alpha0" />
     <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
+    <PackageReference Update="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>
