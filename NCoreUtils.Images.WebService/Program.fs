@@ -9,6 +9,7 @@ module Program =
 
   let private configureKestrel (options : KestrelServerOptions) =
     options.Limits.MaxResponseBufferSize <- Nullable 0L
+    options.Limits.MaxRequestBodySize <- Nullable ()
     // options.Limits.MaxRequestBufferSize  <- Nullable 32768L
     ()
 

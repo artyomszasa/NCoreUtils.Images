@@ -103,6 +103,20 @@ type ImageResizer =
       |> Seq.filter supports
       |> Seq.toList
 
+  member inline private this.DecideImageType (image : IImage) (options : ResizeOptions) =
+    match options.ImageType with
+    | null ->
+      let message = sprintf "No target image type spcified, using orignal image type %A (%A)." image.ImageType image.NativeImageType
+      this.logger.LogDebug (null, message)
+      Ok image.ImageType
+    | itype ->
+    match ImageType.ofExtension itype with
+    | ImageType.Other -> itype |> ImageResizerError.invalidImageType :> ImageResizerError |> Error
+    | imageType ->
+      let message = sprintf "Target image type is %A." imageType
+      this.logger.LogDebug (null, message)
+      Ok imageType
+
   member inline private this.DecideQuality (options : ResizeOptions) imageType =
     match options.Quality.HasValue with
     | true -> options.Quality.Value
@@ -175,7 +189,7 @@ type ImageResizer =
 
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   member this.AsyncGetImageInfo (source : IStreamProducer) = async {
-    let consumer =
+    use consumer =
       { new IStreamConsumer<_> with
           member __.AsyncConsume input = this.provider.AsyncFromStream input
           member __.Dispose () = ()

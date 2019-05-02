@@ -194,9 +194,10 @@ and
         Exif        = exifBuilder.ToImmutable () }
 
     interface IImage with
-      member this.Provider  = this.provider :> _
-      member this.Size      = this.size
-      member this.ImageType = this.imageType
+      member this.Provider        = this.provider :> _
+      member this.Size            = this.size
+      member this.NativeImageType = box this.native.Format
+      member this.ImageType       = this.imageType
       member this.AsyncWriteTo (stream, imageType, quality) =
         Async.FromContinuations
           (fun (succ, err, _) ->

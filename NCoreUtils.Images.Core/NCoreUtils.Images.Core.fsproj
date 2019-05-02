@@ -21,8 +21,8 @@
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0-alpha0" />
-    <PackageReference Include="NCoreUtils.IO" Version="2.1.0-alpha0" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0-alpha1" />
+    <PackageReference Include="NCoreUtils.IO" Version="2.1.0-beta0" />
     <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">

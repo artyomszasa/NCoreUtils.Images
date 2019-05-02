@@ -175,14 +175,15 @@ and
   [<Interface>]
   IImage =
     inherit IDisposable
-    abstract Provider     : IImageProvider
-    abstract Size         : Size
-    abstract ImageType    : ImageType
-    abstract AsyncWriteTo : stream:Stream * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int -> Async<unit>
-    abstract AsyncSaveTo  : path:string   * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int -> Async<unit>
-    abstract Resize       : size:Size      -> unit
-    abstract Crop         : rect:Rectangle -> unit
-    abstract GetImageInfo : unit -> ImageInfo
+    abstract Provider        : IImageProvider
+    abstract Size            : Size
+    abstract NativeImageType : obj
+    abstract ImageType       : ImageType
+    abstract AsyncWriteTo    : stream:Stream * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int -> Async<unit>
+    abstract AsyncSaveTo     : path:string   * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int -> Async<unit>
+    abstract Resize          : size:Size      -> unit
+    abstract Crop            : rect:Rectangle -> unit
+    abstract GetImageInfo    : unit -> ImageInfo
 
 type
   [<Interface>]
@@ -221,20 +222,22 @@ type
     val mutable private provider : IImageProvider
     new (provider) = { provider = provider }
     member this.Provider with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.provider
-    abstract Size         : Size
-    abstract ImageType    : ImageType
-    abstract WriteToAsync : stream:Stream * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int * [<Optional>] cancellationToken:CancellationToken -> Task
-    abstract SaveToAsync  : path:string   * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int * [<Optional>] cancellationToken:CancellationToken -> Task
-    abstract Resize       : size:Size      -> unit
-    abstract Crop         : rect:Rectangle -> unit
-    abstract GetImageInfo : unit -> ImageInfo
-    abstract Dispose      : disposing:bool -> unit
+    abstract Size            : Size
+    abstract NativeImageType : obj
+    abstract ImageType       : ImageType
+    abstract WriteToAsync    : stream:Stream * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int * [<Optional>] cancellationToken:CancellationToken -> Task
+    abstract SaveToAsync     : path:string   * imageType:ImageType * [<Optional; DefaultParameterValue(85)>] quality:int * [<Optional>] cancellationToken:CancellationToken -> Task
+    abstract Resize          : size:Size      -> unit
+    abstract Crop            : rect:Rectangle -> unit
+    abstract GetImageInfo    : unit -> ImageInfo
+    abstract Dispose         : disposing:bool -> unit
     member inline internal this.WriteToDirect (stream, imageType, quality, cancellationToken) = this.WriteToAsync (stream, imageType, quality, cancellationToken)
     member inline internal this.SaveToDirect (path, imageType, quality, cancellationToken) = this.SaveToAsync (path, imageType, quality, cancellationToken)
     interface IImage with
-      member this.Provider  = this.Provider
-      member this.Size      = this.Size
-      member this.ImageType = this.ImageType
+      member this.Provider        = this.Provider
+      member this.Size            = this.Size
+      member this.NativeImageType = this.NativeImageType
+      member this.ImageType       = this.ImageType
       member this.AsyncWriteTo (stream, imageType, quality) = Async.Adapt (fun cancellationToken -> this.WriteToAsync (stream, imageType, quality, cancellationToken))
       member this.AsyncSaveTo (path, imageType, quality) = Async.Adapt (fun cancellationToken -> this.SaveToAsync (path, imageType, quality, cancellationToken))
       member this.Resize size = this.Resize size
