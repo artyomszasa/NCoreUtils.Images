@@ -9,7 +9,9 @@
   <ItemGroup>
     <Compile Include="Jpegoptim.fs" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>

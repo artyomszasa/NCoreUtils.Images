@@ -12,6 +12,7 @@
     <ProjectReference Include="..\NCoreUtils.Images.GoogleCloudStorage\NCoreUtils.Images.GoogleCloudStorage.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
     <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.1.0-alpha0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>

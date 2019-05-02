@@ -21,6 +21,7 @@
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.6.2" />
     <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0-alpha1" />
     <PackageReference Include="NCoreUtils.IO" Version="2.1.0-beta0" />
     <PackageReference Include="NCoreUtils.Linq" Version="1.0.5" />
