@@ -1,6 +1,7 @@
 namespace NCoreUtils.Images
 
 open System
+open System.Diagnostics.CodeAnalysis
 open System.IO
 open System.Net
 open System.Net.Http
@@ -13,73 +14,14 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Serialization
 open System.Runtime.CompilerServices
 open NCoreUtils.IO
-open System.Collections.Generic
-open System.Collections.Immutable
-
-type private SerializationInfo = System.Runtime.Serialization.SerializationInfo
-type private SerializationException = System.Runtime.Serialization.SerializationException
 
 type ImageResizerClientConfiguration () =
   member val EndPoints = Array.empty<string> with get, set
 
-[<Serializable>]
-type RemoteImageResizerError =
-  inherit ImageResizerError
-  val mutable private uri : string
-  internal new (message, description, uri) =
-    { inherit ImageResizerError (message, description)
-      uri = uri }
-  private new () = RemoteImageResizerError (null, null, null)
-  member this.Uri = this.uri
-  member private this.Uri with set uri = this.uri <- uri
-  override this.RaiseException () = RemoteImageResizerException this |> raise
-
-and
-  [<Serializable>]
-  RemoteImageResizerStatusCodeError =
-    inherit RemoteImageResizerError
-    val mutable private statusCode : int
-    internal new (message, description, uri, statusCode) =
-      { inherit RemoteImageResizerError (message, description, uri)
-        statusCode = statusCode }
-    private new () = RemoteImageResizerStatusCodeError (null, null, null, 0)
-    member this.StatusCode = this.statusCode
-    member private this.StatusCode with set statusCode = this.statusCode <- statusCode
-    override this.RaiseException () = RemoteImageResizerStatusCodeException this |> raise
-
-and
-  [<Serializable>]
-  RemoteImageResizerClrError =
-    inherit RemoteImageResizerError
-    val mutable private innerException : exn
-    internal new (message, description, uri, innerException) =
-      { inherit RemoteImageResizerError (message, description, uri)
-        innerException = innerException }
-    private new () = RemoteImageResizerClrError (null, null, null, null)
-    member this.InnerException = this.innerException
-    member private this.InnerException with set innerException = this.innerException <- innerException
-    override this.RaiseException () = RemoteImageResizerException (this, this.InnerException) |> raise
-
-and
-  [<Serializable>]
-  RemoteImageResizerException =
-    inherit ImageResizerException
-    new (error : RemoteImageResizerError) = { inherit ImageResizerException (error) }
-    new (error : RemoteImageResizerError, innerException) = { inherit ImageResizerException (error, innerException) }
-    new (info : SerializationInfo, context) = { inherit ImageResizerException (info, context) }
-    member this.RequestUri = (this.Error :?> RemoteImageResizerError).Uri
-
-and
-  [<Serializable>]
-  RemoteImageResizerStatusCodeException =
-    inherit RemoteImageResizerException
-    new (error : RemoteImageResizerStatusCodeError) = { inherit RemoteImageResizerException (error) }
-    new (error : RemoteImageResizerStatusCodeError, innerException) = { inherit RemoteImageResizerException (error, innerException) }
-    new (info : SerializationInfo, context) = { inherit RemoteImageResizerException (info, context) }
-    member this.StatusCode = (this.Error :?> RemoteImageResizerStatusCodeError).StatusCode
 
 [<AutoOpen>]
 module private ImageResizerClientHelpers =
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let genericRemoteError uri statusCode =
     RemoteImageResizerStatusCodeError (
       message     = sprintf "Server responded with %d (uri = %s)." statusCode uri,
@@ -87,6 +29,7 @@ module private ImageResizerClientHelpers =
       uri         = uri,
       statusCode  = statusCode)
 
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let clrRemoteError uri (exn : exn) =
     RemoteImageResizerClrError (
       message        = sprintf "Exception has been raised while performing operation (uri = %s)." uri,
@@ -94,12 +37,14 @@ module private ImageResizerClientHelpers =
       uri            = uri,
       innerException = exn)
 
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let emptyResponseError uri =
     RemoteImageResizerError (
       message     = sprintf "Empty response (uri = %s)." uri,
       description = "Remote server reported no errors but sent no data.",
       uri         = uri)
 
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let invalidResponseError uri =
     RemoteImageResizerError (
       message     = sprintf "Invalid response (uri = %s)." uri,
@@ -118,6 +63,7 @@ module private ImageResizerClientHelpers =
     settings.Converters.Insert (0, ImageResizerErrorConverter ())
     settings
 
+  [<ExcludeFromCodeCoverage>]
   let inline private appends first (name : string) (value : string) (builder : StringBuilder) =
     match isNull value with
     | true -> builder
@@ -129,6 +75,7 @@ module private ImageResizerClientHelpers =
       | _ ->
         builder.AppendFormat ("&{0}={1}", name, Uri.EscapeDataString value)
 
+  [<ExcludeFromCodeCoverage>]
   let inline private appendn first (name : string) (value : Nullable<_>) (builder : StringBuilder) =
     match value.HasValue with
     | false -> builder
@@ -140,7 +87,7 @@ module private ImageResizerClientHelpers =
       | _ ->
         builder.AppendFormat("&{0}={1}", name, Uri.EscapeDataString <| value.Value.ToString ())
 
-
+  [<ExcludeFromCodeCoverage>]
   let inline private builderToString (builder : StringBuilder) = builder.ToString ()
 
   let createQueryString (options : ResizeOptions) =
@@ -204,6 +151,7 @@ module private ImageResizerClientHelpers =
       | _ -> async.Return Failed
     | _ -> async.Return Failed
 
+  [<ExcludeFromCodeCoverage>]
   let inline getResult res =
     match res with
     | Ok res -> res
@@ -224,6 +172,16 @@ module private ImageResizerClientHelpers =
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let internal (|IsBrokenPipe|_|) exn = isBrokenPipe exn
 
+  type UriBuilder with
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+    member this.AppendPathSegment segment =
+      match String.IsNullOrEmpty this.Path with
+      | true -> this.Path <- segment
+      | _ ->
+      match this.Path.[this.Path.Length - 1] with
+      | '/' -> this.Path <- this.Path + segment
+      | _   -> this.Path <- this.Path + "/" + segment
+
 [<Struct>]
 type private ErrorDesc =
   | TryNext of LastError:ImageResizerError
@@ -231,17 +189,21 @@ type private ErrorDesc =
 
 type ImageResizerClient =
   val private configuration     : ImageResizerClientConfiguration
+
   val private logger            : ILog
+
   val private httpClientFactory : IHttpClientFactoryAdapter
+
   new (configuration, logger : ILog<ImageResizerClient>, [<Optional; DefaultParameterValue(null:IHttpClientFactoryAdapter)>] httpClientFactory : IHttpClientFactoryAdapter) =
     { configuration     = configuration
       logger            = logger
       httpClientFactory = httpClientFactory }
 
   member private this.AsyncGetCapabilities (endpoint : string) = async {
-    let uriBuilder = UriBuilder endpoint
-    uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "capabilities" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "capabilities" else uriBuilder.Path + "/capabilities")
-    let uri = uriBuilder.Uri
+    let uri =
+      let uriBuilder = UriBuilder endpoint
+      uriBuilder.AppendPathSegment Routes.Capabilities
+      uriBuilder.Uri
     try
       use  httpClient  = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
       let! response    = Async.Adapt (fun _ -> httpClient.GetStringAsync uri)
@@ -324,9 +286,10 @@ type ImageResizerClient =
         return Error (TryNext (clrRemoteError uri.AbsoluteUri exn)) }
 
   member private this.AsyncResInvokeGetInfo (source, endpoint : string) = async {
-    let uriBuilder = UriBuilder endpoint
-    uriBuilder.Path <- if System.String.IsNullOrEmpty uriBuilder.Path then "info" else (if uriBuilder.Path.EndsWith "/" then uriBuilder.Path + "info" else uriBuilder.Path + "/info")
-    let uri = uriBuilder.Uri
+    let uri =
+      let uriBuilder = UriBuilder endpoint
+      uriBuilder.AppendPathSegment Routes.Info
+      uriBuilder.Uri
     try
       let! capabilities          = this.AsyncGetCapabilities endpoint
       let! requestData           = this.AsyncGetSourceData (source, capabilities)
@@ -383,7 +346,13 @@ type ImageResizerClient =
           this.logger.LogWarning (null, err.Description)
           return! doInvoke source (Some err) es
         | Error (StopWithError err) -> return Error err }
-    doInvoke source None (List.ofArray this.configuration.EndPoints)
+    let endpoints = List.ofArray this.configuration.EndPoints
+    async {
+      use source' =
+        match this.configuration.EndPoints.Length with
+        | 0 | 1 -> source
+        | _     -> new BufferedStreamProducer (source) :> _
+      return! doInvoke source' None endpoints }
 
   member this.AsyncResResize (source : string, destination, options) = async {
     use producer =

@@ -45,9 +45,6 @@ type ISerializableImageDestination =
 
 [<Interface>]
 type IImageResizer =
-  // abstract AsyncResize       : source:Stream * destination:IImageDestination * options:ResizeOptions -> Async<unit>
-  // abstract AsyncResResize    : source:Stream * destination:IImageDestination * options:ResizeOptions -> Async<Result<unit, ImageResizerError>>
-  // abstract AsyncGetImageInfo : source:Stream -> Async<ImageInfo>
   abstract AsyncResize       : source:IStreamProducer * destination:IImageDestination * options:ResizeOptions -> Async<unit>
   abstract AsyncResResize    : source:IStreamProducer * destination:IImageDestination * options:ResizeOptions -> Async<Result<unit, ImageResizerError>>
   abstract AsyncGetImageInfo : source:IStreamProducer -> Async<ImageInfo>

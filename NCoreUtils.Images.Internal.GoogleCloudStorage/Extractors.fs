@@ -6,6 +6,8 @@ open System.Text
 open NCoreUtils
 open NCoreUtils.AspNetCore
 
+module ValueOption = Microsoft.FSharp.Core.ValueOption
+
 type GoogleCloudStorageSourceExtractor () =
   interface IImageSourceExtractor with
     member __.AsyncExtractImageSource httpContext =

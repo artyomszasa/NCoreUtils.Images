@@ -1,7 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.2.0-beta0</Version>
+    <Version>2.2.0</Version>
+    <!-- NuGet -->
+    <PackageId>NCoreUtils.Images.GoogleCloudStorage</PackageId>
+    <Title>$(PackageId)</Title>
+    <Authors>Artyom Antyipin</Authors>
+    <Description>Direct Google Cloud Storage support for NCoreUtils image management library.</Description>
+    <Copyright>Artyom Antyipin</Copyright>
+    <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
+    <PackageReleaseNotes>Target F# 4.6.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Assembly Info -->
+    <Product>NCoreUtils</Product>
+    <AssemblyName>$(PackageId)</AssemblyName>
+    <AssemblyTitle>$(AssemblyName)</AssemblyTitle>
+    <!-- Compilation -->
+    <OutputType>Library</OutputType>
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>FS2003</NoWarn>
   </PropertyGroup>
   <!-- mono fix -->
@@ -21,8 +39,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.6.2" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.38.2" />
+    <PackageReference Include="Google.Apis" Version="1.39.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.39.0" />
     <PackageReference Include="Google.Apis.Storage.v1" Version="1.38.2.1545" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.2.0" />
     <PackageReference Include="NCoreUtils.IO" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
   </ItemGroup>

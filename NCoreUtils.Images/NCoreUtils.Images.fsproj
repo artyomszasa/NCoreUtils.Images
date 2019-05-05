@@ -1,11 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.2.0-beta0</Version>
+    <Version>2.2.0</Version>
+    <!-- NuGet -->
+    <PackageId>NCoreUtils.Images</PackageId>
+    <Title>$(PackageId)</Title>
+    <Authors>Artyom Antyipin</Authors>
+    <Description>Configuration and initialization for NCoreUtils image management library.</Description>
+    <Copyright>Artyom Antyipin</Copyright>
+    <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
+    <PackageReleaseNotes>Target F# 4.6.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Assembly Info -->
+    <Product>NCoreUtils</Product>
+    <AssemblyName>$(PackageId)</AssemblyName>
+    <AssemblyTitle>$(AssemblyName)</AssemblyTitle>
+    <!-- Compilation -->
+    <OutputType>Library</OutputType>
+    <DebugType>portable</DebugType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>FS2003</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="ServiceCollectionExtensions.fs" />
   </ItemGroup>
@@ -16,5 +32,4 @@
     <ProjectReference Include="..\NCoreUtils.Images.DependencyInjection\NCoreUtils.Images.DependencyInjection.fsproj" />
     <ProjectReference Include="..\NCoreUtils.Images.Core\NCoreUtils.Images.Core.fsproj" />
   </ItemGroup>
-
 </Project>

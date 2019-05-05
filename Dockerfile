@@ -14,7 +14,7 @@ COPY ./NCoreUtils.Images.WebService.Shared/*.fsproj ./NCoreUtils.Images.WebServi
 COPY ./NCoreUtils.Images.GoogleCloudStorage/*.fsproj ./NCoreUtils.Images.GoogleCloudStorage/
 COPY ./NCoreUtils.Images.Internal/*.fsproj ./NCoreUtils.Images.Internal/
 COPY ./NCoreUtils.Images.Internal.GoogleCloudStorage/*.fsproj ./NCoreUtils.Images.Internal.GoogleCloudStorage/
-RUN dotnet restore NCoreUtils.Images.WebService/NCoreUtils.Images.WebService.fsproj -r linux-x64
+RUN dotnet restore NCoreUtils.Images.WebService/*.fsproj -r linux-x64 -v n
 
 COPY ./NCoreUtils.Images/*.fs ./NCoreUtils.Images/
 COPY ./NCoreUtils.Images.Abstractions/*.fs ./NCoreUtils.Images.Abstractions/

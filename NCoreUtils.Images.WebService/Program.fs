@@ -13,11 +13,14 @@ module Program =
     // options.Limits.MaxRequestBufferSize  <- Nullable 32768L
     ()
 
-  [<EntryPoint>]
-  let main args =
+  let CreateWebHostBuilder (_args : string[]) =
     WebHostBuilder()
       .UseKestrel(configureKestrel)
       .UseStartup<Startup>()
+
+  [<EntryPoint>]
+  let main args =
+    CreateWebHostBuilder(args)
       .Build()
       .Run()
 
