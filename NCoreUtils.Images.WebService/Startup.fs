@@ -60,11 +60,12 @@ type Startup (env : IHostingEnvironment) =
       .AddImageMagickResizer()
       |> ignore
 
-  member __.Configure (app: IApplicationBuilder, serviceConfiguration : ServiceConfiguration) =
+  member __.Configure (app: IApplicationBuilder, serviceConfiguration : ServiceConfiguration, loggerFactory : ILoggerFactory) =
     let semaphore = new SemaphoreSlim (serviceConfiguration.MaxConcurrentOps, serviceConfiguration.MaxConcurrentOps)
 
-    ImageMagick.MagickNET.SetLogEvents ImageMagick.LogEvents.None
-    // ImageMagick.MagickNET.Log.AddHandler (fun _ e -> printfn "%s" e.Message)
+    let logger = loggerFactory.CreateLogger typeof<ImageMagick.MagickNET>
+    ImageMagick.MagickNET.SetLogEvents (ImageMagick.LogEvents.Image ||| ImageMagick.LogEvents.Coder ||| ImageMagick.LogEvents.Transform)
+    ImageMagick.MagickNET.Log.AddHandler (fun _ e -> logger.LogInformation (sprintf "[%s] %s" (e.EventType.ToString ()) e.Message))
 
     app
       .UsePrePopulateLoggingContext()
