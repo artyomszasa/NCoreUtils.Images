@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Image.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Providers.Abstractions\NCoreUtils.Images.Providers.Abstractions.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Magick.NET-Q16-x64" Version="7.13.0" />
+  </ItemGroup>
+
+</Project>

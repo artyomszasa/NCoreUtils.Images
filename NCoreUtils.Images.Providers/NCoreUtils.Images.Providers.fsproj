@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ImageResizer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Providers.Abstractions\NCoreUtils.Images.Providers.Abstractions.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+  </ItemGroup>
+
+</Project>

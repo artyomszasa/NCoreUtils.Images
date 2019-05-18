@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Client.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Client.Common\NCoreUtils.Images.Client.Common.fsproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.Grpc.Abstractions\NCoreUtils.Images.Grpc.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

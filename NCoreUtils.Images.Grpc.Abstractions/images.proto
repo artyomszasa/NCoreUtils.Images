@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+// import "google/protobuf/wrappers.proto";
+
+option csharp_namespace = "NCoreUtils.Images.Proto";
+
+// message ResizeOptions {
+//   string mode = 1;
+//   google.protobuf.Int32Value width = 2;
+//   google.protobuf.Int32Value height = 3;
+//   google.protobuf.Int32Value quality = 4;
+//   google.protobuf.BoolValue optimize = 5;
+//   google.protobuf.Int32Value weightX = 6;
+//   google.protobuf.Int32Value weightY = 7;
+//   string imageType = 8;
+// }
+
+message Chunk {
+  bytes data = 1;
+}
+
+message Empty { }
+
+service ImageService {
+  rpc ResizeTransform (stream Chunk) returns (stream Chunk);
+  rpc ResizeProduce (Empty) returns (stream Chunk);
+  rpc ResizeConsume (stream Chunk) returns (Empty);
+  rpc ResizeOperation (Empty) returns (Empty);
+}
+
+
+// message RequestData {
+//   oneof data {
+//     bytes chunk = 1;
+//     ResizeOptions options = 2;
+//   }
+// }
+//
+// message ResponseData {
+//   oneof data {
+//     bytes chunk = 1;
+//     string imageType = 2;
+//   }
+// }
+//
+// service ImageService {
+//   rpc ResizeAsync (stream RequestData) returns (stream ResponseData);
+// }

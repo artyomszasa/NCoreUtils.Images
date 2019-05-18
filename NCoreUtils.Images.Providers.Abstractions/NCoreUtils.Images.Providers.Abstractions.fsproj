@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Contract.fs" />
+    <Compile Include="Resizers.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
+  </ItemGroup>
+</Project>

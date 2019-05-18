@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Contract.fs" />
+    <Compile Include="ImageSource.fs" />
+    <Compile Include="ImageDestination.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis" Version="1.40.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.40.0" />
+    <PackageReference Include="Google.Apis.Core" Version="1.40.0" />
+    <PackageReference Include="Google.Apis.Storage.v1" Version="1.40.0.1580" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.fsproj" />
+  </ItemGroup>
+
+</Project>
