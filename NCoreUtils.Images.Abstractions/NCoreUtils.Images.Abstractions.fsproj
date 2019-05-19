@@ -7,10 +7,11 @@
   <ItemGroup>
     <Compile Include="Contract.fs" />
     <Compile Include="Extensions.fs" />
+    <Compile Include="Interop.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.IO" Version="2.1.0" />
+    <PackageReference Include="NCoreUtils.IO" Version="2.1.0.1" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
   </ItemGroup>
 

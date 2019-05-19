@@ -6,6 +6,12 @@ open System.Collections.Immutable
 open System.Runtime.Serialization
 open NCoreUtils.IO
 
+[<RequireQualifiedAccess>]
+module Defaults =
+
+  [<Literal>]
+  let ChunkSize = 262144
+
 [<NoEquality; NoComparison>]
 type ImageInfo = {
   Width       : int
@@ -28,9 +34,11 @@ type IResizeOptions =
 type IMetadataProvider =
   abstract AsyncGetMetadata : unit -> Async<IReadOnlyDictionary<string, string>>
 
+[<AllowNullLiteral>]
 type IImageSource =
   abstract CreateProducer : unit -> IStreamProducer
 
+[<AllowNullLiteral>]
 type IImageDestination =
   abstract CreateConsumer : unit -> IStreamConsumer
 

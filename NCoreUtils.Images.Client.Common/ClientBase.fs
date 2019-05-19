@@ -40,7 +40,7 @@ type ImageResizerClientBase =
         return! this.AsyncGetInfo producer }
 
   default this.AsyncTransform (producer : IStreamProducer, consumer : IStreamConsumer, options : IResizeOptions) = async {
-    use transformation = StreamTransformation.chainDependent (this.CreateTransformation options) (fun _ -> ValueNone)
+    let transformation = StreamTransformation.chainDependent (this.CreateTransformation options) (fun _ -> ValueNone)
     do! StreamConsumer.asyncConsumeProducer (StreamTransformation.chainProducer transformation producer) consumer }
 
   default this.AsyncTransform (source : IImageSource, destination : IImageDestination, options) =
