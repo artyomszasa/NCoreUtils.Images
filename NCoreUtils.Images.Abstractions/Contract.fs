@@ -2,18 +2,12 @@ namespace NCoreUtils.Images
 
 open System
 open System.IO
-open System.Net.Http
 open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open NCoreUtils
 open NCoreUtils.IO
 open System.Collections.Generic
-
-[<Interface>]
-[<AllowNullLiteral>]
-type IHttpClientFactoryAdapter =
-  abstract CreateClient : name:string -> HttpClient
 
 [<Interface>]
 type ILog =

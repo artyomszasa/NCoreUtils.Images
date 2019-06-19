@@ -1,4 +1,5 @@
-FROM microsoft/dotnet:2.2-sdk AS build-env-ncimages
+# FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build-env-ncimages
+FROM gcr.io/hydra-hosting/aspnetcore-build:3.0.100-preview8-debian AS build-env-ncimages
 WORKDIR /app
 COPY ./NuGet.Config ./
 COPY ./NCoreUtils.Images.sln ./
@@ -14,7 +15,7 @@ COPY ./NCoreUtils.Images.WebService.Shared/*.fsproj ./NCoreUtils.Images.WebServi
 COPY ./NCoreUtils.Images.GoogleCloudStorage/*.fsproj ./NCoreUtils.Images.GoogleCloudStorage/
 COPY ./NCoreUtils.Images.Internal/*.fsproj ./NCoreUtils.Images.Internal/
 COPY ./NCoreUtils.Images.Internal.GoogleCloudStorage/*.fsproj ./NCoreUtils.Images.Internal.GoogleCloudStorage/
-RUN dotnet restore NCoreUtils.Images.WebService/*.fsproj -r linux-x64 -v n
+RUN dotnet restore ./NCoreUtils.Images.WebService/*.fsproj -r linux-x64 -v n
 
 COPY ./NCoreUtils.Images/*.fs ./NCoreUtils.Images/
 COPY ./NCoreUtils.Images.Abstractions/*.fs ./NCoreUtils.Images.Abstractions/
@@ -32,17 +33,17 @@ RUN dotnet publish NCoreUtils.Images.WebService/NCoreUtils.Images.WebService.fsp
 
 # RUNTIME IMAGE
 
-FROM microsoft/dotnet:2.2-runtime-deps
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils
-# install imagemagick dependencies
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      curl \
-      jpegoptim
+FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.0
+# RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils
+# # install imagemagick dependencies
+# RUN apt-get update \
+#     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+#       curl \
+#       jpegoptim
 # copy app
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_LISTEN_AT=0.0.0.0:80
 COPY --from=build-env-ncimages /app/out ./
-COPY ./docker/NCoreUtils.Images.WebService.runtimeconfig.json ./
+# COPY ./docker/NCoreUtils.Images.WebService.runtimeconfig.json ./
 ENTRYPOINT ["./NCoreUtils.Images.WebService"]

@@ -145,14 +145,25 @@ and
     member this.Provider with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.provider
     member this.Size with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.size
     member this.ImageType with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.imageType
-    member this.WriteTo (stream : Stream, imageType : ImageType, quality) =
+    member this.WriteTo (stream : Stream, imageType : ImageType, quality, optimize) =
       this.ThrowIfDisposed ()
       this.native.Quality <- quality
+      if optimize then
+        this.native.Strip ()
+        match imageType with
+        | ImageType.Jpeg ->
+          this.native.Interlace <- Interlace.Jpeg
+          this.native.Settings.SetDefine(MagickFormat.Jpeg, "sampling-factor", "4:2:0")
+        | ImageType.Png ->
+          this.native.Interlace <- Interlace.Png
+        | ImageType.Gif ->
+          this.native.Interlace <- Interlace.Gif
+        | _ -> ()
       this.native.Write(stream, imageTypeToMagickFormat imageType)
-    member this.SaveTo (path : string, imageType, quality) =
+    member this.SaveTo (path : string, imageType, quality, optimize) =
       this.ThrowIfDisposed ()
       use stream = new FileStream (path, FileMode.Create, FileAccess.Write, FileShare.None)
-      this.WriteTo (stream, imageType, quality)
+      this.WriteTo (stream, imageType, quality, optimize)
     member this.Resize size =
       this.ThrowIfDisposed ()
       this.native.Resize (size.Width, size.Height)
@@ -198,19 +209,19 @@ and
       member this.Size            = this.size
       member this.NativeImageType = box this.native.Format
       member this.ImageType       = this.imageType
-      member this.AsyncWriteTo (stream, imageType, quality) =
+      member this.AsyncWriteTo (stream, imageType, quality, optimize) =
         Async.FromContinuations
           (fun (succ, err, _) ->
             try
-              this.WriteTo (stream, imageType, quality)
+              this.WriteTo (stream, imageType, quality, optimize)
               succ ()
             with exn -> err exn
           )
-      member this.AsyncSaveTo (path, imageType, quality) =
+      member this.AsyncSaveTo (path, imageType, quality, optimize) =
         Async.FromContinuations
           (fun (succ, err, _) ->
             try
-              this.SaveTo (path, imageType, quality)
+              this.SaveTo (path, imageType, quality, optimize)
               succ ()
             with exn -> err exn
           )

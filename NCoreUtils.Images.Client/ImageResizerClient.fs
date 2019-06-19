@@ -18,6 +18,18 @@ open NCoreUtils.IO
 type ImageResizerClientConfiguration () =
   member val EndPoints = Array.empty<string> with get, set
 
+#if NET452
+
+// dummy interface for .NET Framework workaround...
+[<AllowNullLiteral>]
+type IHttpClientFactory =
+  abstract CreateClient: name:string -> HttpClient
+
+#else
+
+type IHttpClientFactory = System.Net.Http.IHttpClientFactory
+
+#endif
 
 [<AutoOpen>]
 module private ImageResizerClientHelpers =
@@ -192,12 +204,18 @@ type ImageResizerClient =
 
   val private logger            : ILog
 
-  val private httpClientFactory : IHttpClientFactoryAdapter
+  val private httpClientFactory : IHttpClientFactory
 
-  new (configuration, logger : ILog<ImageResizerClient>, [<Optional; DefaultParameterValue(null:IHttpClientFactoryAdapter)>] httpClientFactory : IHttpClientFactoryAdapter) =
+  new (configuration, logger : ILog<ImageResizerClient>, [<Optional; DefaultParameterValue(null:IHttpClientFactory)>] httpClientFactory : IHttpClientFactory) =
     { configuration     = configuration
       logger            = logger
       httpClientFactory = httpClientFactory }
+
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  member private this.CreateHttpClient () =
+    match this.httpClientFactory with
+    | null    -> new HttpClient ()
+    | factory -> factory.CreateClient "ImageResizer.Resize"
 
   member private this.AsyncGetCapabilities (endpoint : string) = async {
     let uri =
@@ -205,7 +223,7 @@ type ImageResizerClient =
       uriBuilder.AppendPathSegment Routes.Capabilities
       uriBuilder.Uri
     try
-      use  httpClient  = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
+      use  httpClient  = this.CreateHttpClient ()
       let! response    = Async.Adapt (fun _ -> httpClient.GetStringAsync uri)
       let capabilities = JsonConvert.DeserializeObject<string[]> response
       let message      = capabilities |> String.concat ", " |> sprintf "%s supports following extensions: %s" endpoint
@@ -249,7 +267,7 @@ type ImageResizerClient =
       if not (isNull destinationData) then
         for kv in destinationData do
           requestMessage.Headers.Add (sprintf "X-%s" kv.Key, kv.Value)
-      use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.Resize"
+      use  httpClient            = this.CreateHttpClient ()
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
       match status with
@@ -300,7 +318,7 @@ type ImageResizerClient =
       if not (isNull requestData.Info) then
         for kv in requestData.Info do
           requestMessage.Headers.Add (sprintf "X-%s" kv.Key, kv.Value)
-      use  httpClient            = if isNull this.httpClientFactory then new HttpClient () else this.httpClientFactory.CreateClient "ImageResizer.GetInfo"
+      use  httpClient            = this.CreateHttpClient ()
       use! responseMessage       = httpClient.AsyncSend (requestMessage, HttpCompletionOption.ResponseHeadersRead)
       let! status                = asyncCheck responseMessage
       match status with

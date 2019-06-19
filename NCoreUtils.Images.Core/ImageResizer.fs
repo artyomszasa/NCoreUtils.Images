@@ -154,11 +154,11 @@ type ImageResizer =
                 | Ok imageType -> imageType
               // setContentType <| ImageType.toMediaType imageType
               let output = dependentOutput imageType
-
               let resizer = factory.CreateResizer (image, options)
               image.Resize resizer
               let quality = this.DecideQuality options imageType
-              do! image.AsyncWriteTo (output, imageType, quality)
+              let optimize = this.DecideOptimize options imageType
+              do! image.AsyncWriteTo (output, imageType, quality, optimize)
               do! output.AsyncFlush ()
               output.Close () }
         }

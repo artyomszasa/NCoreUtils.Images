@@ -29,8 +29,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NCoreUtils.Images.GoogleClo
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NCoreUtils.Images.Internal.GoogleCloudStorage", "NCoreUtils.Images.Internal.GoogleCloudStorage\NCoreUtils.Images.Internal.GoogleCloudStorage.fsproj", "{FFF55B56-1679-4C18-9BB8-5E5463D1F0E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCoreUtils.Images.Unit", "NCoreUtils.Images.Unit\NCoreUtils.Images.Unit.csproj", "{0406FD9F-2E27-4BA3-9804-28F6332D70FD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -200,17 +198,5 @@ Global
 		{FFF55B56-1679-4C18-9BB8-5E5463D1F0E5}.Release|x64.Build.0 = Release|Any CPU
 		{FFF55B56-1679-4C18-9BB8-5E5463D1F0E5}.Release|x86.ActiveCfg = Release|Any CPU
 		{FFF55B56-1679-4C18-9BB8-5E5463D1F0E5}.Release|x86.Build.0 = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|x64.Build.0 = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Debug|x86.Build.0 = Debug|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|x64.ActiveCfg = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|x64.Build.0 = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|x86.ActiveCfg = Release|Any CPU
-		{0406FD9F-2E27-4BA3-9804-28F6332D70FD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
