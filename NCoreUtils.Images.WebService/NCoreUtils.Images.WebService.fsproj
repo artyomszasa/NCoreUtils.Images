@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <IsPackable>False</IsPackable>
-    <Version>2.2.0</Version>
+    <Version>2.2.0.1</Version>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
@@ -28,7 +28,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.2.0" />
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.2.0" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.2.1" />
     <PackageReference Include="NCoreUtils.AspNetCore.Logging.Google" Version="2.1.0" />
     <PackageReference Include="NCoreUtils.FSharp" Version="2.1.0" />
     <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.1.0" />
