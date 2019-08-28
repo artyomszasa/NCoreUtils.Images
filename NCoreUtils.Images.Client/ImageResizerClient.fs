@@ -200,6 +200,8 @@ type private ErrorDesc =
   | StopWithError of Error:ImageResizerError
 
 type ImageResizerClient =
+  static member HttpClientConfigurationName = "ImageResizer.Resize"
+
   val private configuration     : ImageResizerClientConfiguration
 
   val private logger            : ILog
@@ -215,7 +217,7 @@ type ImageResizerClient =
   member private this.CreateHttpClient () =
     match this.httpClientFactory with
     | null    -> new HttpClient ()
-    | factory -> factory.CreateClient "ImageResizer.Resize"
+    | factory -> factory.CreateClient ImageResizerClient.HttpClientConfigurationName
 
   member private this.AsyncGetCapabilities (endpoint : string) = async {
     let uri =
