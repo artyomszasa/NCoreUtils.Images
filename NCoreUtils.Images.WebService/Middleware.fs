@@ -90,7 +90,7 @@ module internal Middleware =
   let private extractSource httpContext (sourceExtractor : IImageSourceExtractor) = async {
     match! sourceExtractor.AsyncExtractImageSource httpContext with
     | ValueSome extractor -> return! extractor.AsyncCreateProducer ()
-    | ValueNone           -> return  StreamProducer.ofStreamWithCleanUp httpContext.Request.Body false }
+    | ValueNone           -> return  StreamProducer.ofStreamWithCleanUp httpContext.Request.Body true }
 
   let private extractDestination httpContext (destinationExtractor : IImageDestinationExtractor) = async {
     match! destinationExtractor.AsyncExtractImageDestination httpContext with

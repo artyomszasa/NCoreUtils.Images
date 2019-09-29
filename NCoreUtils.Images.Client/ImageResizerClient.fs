@@ -115,6 +115,13 @@ module private ImageResizerClientHelpers =
     |> appendn first "cy" options.WeightY
     |> builderToString
 
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  let private suppressDispose (source : IStreamProducer) =
+    { new IStreamProducer with
+        member __.AsyncProduce output = source.AsyncProduce output
+        member __.Dispose () = ()
+    }
+
   let toByteArrayAsync (source : IStreamProducer) =
     let consumer =
       { new IStreamConsumer<byte[]> with
@@ -128,7 +135,7 @@ module private ImageResizerClientHelpers =
                 return memoryStream.ToArray () }
           member __.Dispose () = ()
       }
-    StreamToResultConsumer.asyncConsumeProducer source consumer
+    StreamToResultConsumer.asyncConsumeProducer (suppressDispose source) consumer
 
 
   [<Struct>]

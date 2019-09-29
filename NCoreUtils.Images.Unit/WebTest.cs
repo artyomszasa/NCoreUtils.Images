@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.FSharp.Control;
+using Microsoft.FSharp.Core;
 using NCoreUtils.Images.WebService;
 using NCoreUtils.IO;
 using Xunit;
@@ -14,20 +16,24 @@ namespace NCoreUtils.Images.Unit
 {
     public class WebTest : WebTestBase<Startup>
     {
-        class HttpClientFactory : IHttpClientFactoryAdapter
+        sealed class StreamDestination : IImageDestination
         {
-            readonly WebTest _self;
+            readonly Stream _stream;
 
-            public HttpClientFactory(WebTest self)
+            public StreamDestination(Stream stream) => _stream = stream ?? throw new System.ArgumentNullException(nameof(stream));
+
+            public FSharpAsync<Microsoft.FSharp.Core.Unit> AsyncWrite(ContentInfo contentInfo, FSharpFunc<Stream, FSharpAsync<Microsoft.FSharp.Core.Unit>> generator)
             {
-                _self = self;
+                return generator.Invoke(_stream);
             }
 
-            public HttpClient CreateClient(string name)
+            public FSharpAsync<Microsoft.FSharp.Core.Unit> AsyncWriteDelayed(FSharpFunc<FSharpFunc<ContentInfo, Microsoft.FSharp.Core.Unit>, FSharpFunc<Stream, FSharpAsync<Microsoft.FSharp.Core.Unit>>> generator)
             {
-                return _self.CreateClient();
+                FSharpFunc<ContentInfo, Microsoft.FSharp.Core.Unit> set = FSharpFunc<ContentInfo, Microsoft.FSharp.Core.Unit>.FromConverter(_ => default);
+                return generator.Invoke(set).Invoke(_stream);
             }
         }
+
 
         public WebTest(WebApplicationFactory<Startup> factory) : base(factory) { }
 
@@ -39,7 +45,7 @@ namespace NCoreUtils.Images.Unit
                     EndPoints = new [] { "http://localhost/xxx", "http://localhost" }
                 },
                 new DummyLog<ImageResizerClient>(),
-                new HttpClientFactory(this)
+                new DummyHttpClientFactory(this.CreateClient)
             );
         }
 
@@ -55,14 +61,15 @@ namespace NCoreUtils.Images.Unit
         public async Task SuccessfullResize()
         {
             var binary = Resources.Png.X;
+            using var producer = new ReusableStreamProducer(new MemoryStream(binary, false));
             var client = CreateResizerClient();
 
-            var info = await client.GetImageInfoAsync(StreamProducerModule.FromStream(new MemoryStream(binary, false)), CancellationToken.None);
+            var info = await client.GetImageInfoAsync(producer.Reuse(), CancellationToken.None);
             Assert.Equal (100, info.Width);
 
             using (var buffer = new MemoryStream())
             {
-                await client.ResizeAsync(new MemoryStream(binary, false), buffer, new ResizeOptions(imageType: "png"), CancellationToken.None);
+                await client.ResizeAsync(producer.Reuse(), new StreamDestination(buffer), new ResizeOptions(imageType: "png"), CancellationToken.None);
                 Assert.True (Enumerable.SequenceEqual(binary, buffer.ToArray ()));
             }
         }
