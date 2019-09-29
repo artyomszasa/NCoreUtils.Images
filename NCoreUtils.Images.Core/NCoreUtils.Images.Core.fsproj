@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
-    <Version>2.9.0-alpha3</Version>
+    <Version>2.9.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Core</PackageId>
     <Title>$(PackageId)</Title>
@@ -9,7 +9,7 @@
     <Description>NCoreUtils image management library core functionality.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
-    <PackageReleaseNotes>Target F# 4.6.</PackageReleaseNotes>
+    <PackageReleaseNotes>Switch to .net 3.0.0 release.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
@@ -40,9 +40,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.0" />
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="3.0.0-preview8.19405.3" />
-    <PackageReference Include="NCoreUtils.IO" Version="3.0.0-preview8.1" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0-preview8.19405.3" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="3.0.0" />
+    <PackageReference Include="NCoreUtils.IO" Version="3.0.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net452' ">
     <PackageReference Update="System.ValueTuple" Version="4.5.0" />

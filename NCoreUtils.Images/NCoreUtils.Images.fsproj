@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <Version>2.9.0-alpha3</Version>
+    <Version>2.9.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images</PackageId>
     <Title>$(PackageId)</Title>
@@ -9,7 +9,7 @@
     <Description>Configuration and initialization for NCoreUtils image management library.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
-    <PackageReleaseNotes>Target F# 4.6.</PackageReleaseNotes>
+    <PackageReleaseNotes>Switch to .net 3.0.0 release.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.0" />
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="3.0.0-preview8.19405.3" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.DependencyInjection\NCoreUtils.Images.DependencyInjection.fsproj" />

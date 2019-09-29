@@ -52,9 +52,8 @@ type Startup (env : IWebHostEnvironment) =
         | _             -> b.AddGoogleSink (configuration.GetSection "Google") |> ignore
       )
       .AddPrePopulatedLoggingContext()
-      .AddSingleton(JsonSerializerSettings (ReferenceLoopHandling = ReferenceLoopHandling.Ignore, ContractResolver = CamelCasePropertyNamesContractResolver ()))
+      .AddSingleton(Text.Json.JsonSerializerOptions(PropertyNamingPolicy = Text.Json.JsonNamingPolicy.CamelCase))
       .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
-      // .AddSingletonImageOptimization<JpegoptimOptimization>()
       .AddImageSourceExtractors(configureSourceExtractors)
       .AddImageDestinationExtractors(configureDestinationExtractors)
       .AddImageMagickResizer()

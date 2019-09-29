@@ -102,7 +102,7 @@ module internal Middleware =
   let info httpContext { Resizer = imageResizer; SourceExtractor = sourceExtractor } =
     extractSource httpContext sourceExtractor
     >>= imageResizer.AsyncGetImageInfo
-    >>= json httpContext
+    >>= asyncJson httpContext
 
   let handle (computation : unit -> Async<_>) = async {
     try return! computation () >>| Ok
@@ -208,6 +208,6 @@ module internal Middleware =
       | _                   -> async405 httpContext
     | [ CI "capabilities" ] ->
       match HttpContext.httpMethod httpContext with
-      | HttpMethod.HttpGet  -> json httpContext [| Capabilities.serializedImageInfo |]
+      | HttpMethod.HttpGet  -> asyncJson httpContext [| Capabilities.serializedImageInfo |]
       | _                   -> async405 httpContext
     | _ -> asyncNext
