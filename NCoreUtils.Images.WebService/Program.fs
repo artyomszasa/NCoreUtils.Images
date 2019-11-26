@@ -2,6 +2,7 @@ namespace NCoreUtils.Images.WebService
 
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Server.Kestrel.Core
+open NCoreUtils
 open System
 open System.Net
 
@@ -25,10 +26,13 @@ module Program =
   let private configureKestrel (options : KestrelServerOptions) =
     options.Limits.MaxResponseBufferSize <- Nullable 0L
     options.Limits.MaxRequestBodySize <- Nullable ()
-    // options.AllowSynchronousIO <- true
-    // options.Limits.MaxRequestBufferSize  <- Nullable 32768L
-    let endpoint = parseEndpoint <| Environment.GetEnvironmentVariable "ASPNETCORE_LISTEN_AT"
-    options.Listen endpoint
+    options.AllowSynchronousIO <- true
+    match Environment.GetEnvironmentVariable "PORT" |> ValueOption.ofObj >>= tryInt32Value with
+    | ValueSome port ->
+      options.Listen (IPEndPoint (IPAddress.Any, port))
+    | _ ->
+      let endpoint = parseEndpoint <| Environment.GetEnvironmentVariable "ASPNETCORE_LISTEN_AT"
+      options.Listen endpoint
 
   let CreateWebHostBuilder (_args : string[]) =
     WebHostBuilder()

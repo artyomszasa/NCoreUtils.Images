@@ -175,23 +175,37 @@ and
       this.native.RePage ()
     member this.GetImageInfo () : ImageInfo =
       this.ThrowIfDisposed ()
-      let iptc = this.native.GetIptcProfile ()
-      let exif = this.native.GetExifProfile ()
-      let iptcBuilder = ImmutableDictionary.CreateBuilder ()
-      let exifBuilder = ImmutableDictionary.CreateBuilder ()
-      if not (isNull iptc) then
-        for value in iptc.Values do
-          let tag = value.Tag.ToString ()
-          if not (iptcBuilder.ContainsKey tag) then
-            iptcBuilder.Add (tag, value.Value)
-      if not (isNull exif) then
-        for value in exif.Values do
-          match stringify value.Value with
-          | null -> ()
-          | v ->
-            let tag = value.Tag.ToString ()
-            if not (exifBuilder.ContainsKey tag) then
-              exifBuilder.Add (tag, v)
+      let iptc =
+        try
+          let iptcBuilder = ImmutableDictionary.CreateBuilder ()
+          let iptc = this.native.GetIptcProfile ()
+          if not (isNull iptc) then
+            for value in iptc.Values do
+              let tag = value.Tag.ToString ()
+              if not (iptcBuilder.ContainsKey tag) then
+                iptcBuilder.Add (tag, value.Value)
+          iptcBuilder.ToImmutable ()
+        with exn ->
+          // FIXME: log
+          eprintfn "%A" exn
+          ImmutableDictionary.Empty
+      let exif =
+        try
+          let exif = this.native.GetExifProfile ()
+          let exifBuilder = ImmutableDictionary.CreateBuilder ()
+          if not (isNull exif) then
+            for value in exif.Values do
+              match stringify value.Value with
+              | null -> ()
+              | v ->
+                let tag = value.Tag.ToString ()
+                if not (exifBuilder.ContainsKey tag) then
+                  exifBuilder.Add (tag, v)
+          exifBuilder.ToImmutable ()
+        with exn ->
+          // FIXME: log
+          eprintfn "%A" exn
+          ImmutableDictionary.Empty
       let struct (xResolution, yResolution) =
         let density = this.native.Density
         match density.Units with
@@ -201,8 +215,8 @@ and
         Height      = this.Size.Height
         XResolution = xResolution
         YResolution = yResolution
-        Iptc        = iptcBuilder.ToImmutable ()
-        Exif        = exifBuilder.ToImmutable () }
+        Iptc        = iptc
+        Exif        = exif }
 
     interface IImage with
       member this.Provider        = this.provider :> _
