@@ -15,6 +15,8 @@ namespace NCoreUtils.Images.Internal
 
         string ImageType { get; }
 
+        void ApplyFilter(IFilter filter);
+
         void Crop(Rectangle rect);
 
         ImageInfo GetImageInfo();

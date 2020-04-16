@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\NCoreUtils.Images\NCoreUtils.Images.csproj" />
-    <ProjectReference Include="..\NCoreUtils.Images.Providers.ImageMagick\NCoreUtils.Images.Providers.ImageMagick.csproj" />
-  </ItemGroup>
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net461</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0-alpha0</Version>
+    <Version>3.1.0-alpha2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.ImageMagick</PackageId>
     <Title>$(PackageId)</Title>
@@ -37,4 +33,8 @@
     <EnableFrameworkPathOverride Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">true</EnableFrameworkPathOverride>
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images\NCoreUtils.Images.csproj" />
+    <ProjectReference Include="..\NCoreUtils.Images.Providers.ImageMagick\NCoreUtils.Images.Providers.ImageMagick.csproj" />
+  </ItemGroup>
 </Project>

@@ -85,6 +85,10 @@ namespace NCoreUtils.Images
             setContentType(ImageTypes.ToMediaType(imageType));
             var resizer = resizerFactory.CreateResizer(image, options);
             resizer.Resize(image);
+            foreach (var filter in options.Filters)
+            {
+                image.ApplyFilter(filter);
+            }
             await image.WriteToAsync(output, imageType, quality, optimize, cancellationToken);
             await output.FlushAsync(cancellationToken);
             output.Close();

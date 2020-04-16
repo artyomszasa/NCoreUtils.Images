@@ -54,5 +54,23 @@ namespace NCoreUtils.Images
             }
             return ref builder;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref SpanBuilder AppendOption<T>(this ref SpanBuilder builder, ref bool first, string key, T? value)
+            where T : class
+        {
+            if (!(value is null))
+            {
+                if (first)
+                {
+                    first = false;
+                    builder.Append(", ");
+                }
+                builder.Append(key);
+                builder.Append(" = ");
+                builder.Append(value!);
+            }
+            return ref builder;
+        }
     }
 }

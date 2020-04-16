@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0-alpha0</Version>
+    <Version>3.1.0-alpha2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Abstractions</PackageId>
     <Title>$(PackageId)</Title>
@@ -38,7 +38,7 @@
     <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="1.0.2" />
+    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="1.0.3" />
     <PackageReference Include="NCoreUtils.IO.Abstractions" Version="3.1.0-alpha0" />
   </ItemGroup>
 </Project>

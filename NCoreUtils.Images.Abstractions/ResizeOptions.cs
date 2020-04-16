@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
+using NCoreUtils.Images.Internal;
 
 namespace NCoreUtils.Images
 {
     public class ResizeOptions
     {
+        static readonly IReadOnlyList<IFilter> _noFilters = new IFilter[0];
+
         public string? ImageType { get; }
 
         public int? Width { get; }
@@ -20,6 +24,11 @@ namespace NCoreUtils.Images
 
         public int? WeightY { get; }
 
+        /// <summary>
+        /// Gets output filters to apply (if any).
+        /// </summary>
+        public IReadOnlyList<IFilter> Filters { get; }
+
         public ResizeOptions(
             string? imageType = default,
             int? width = default,
@@ -28,7 +37,8 @@ namespace NCoreUtils.Images
             int? quality = default,
             bool? optimize = default,
             int? weightX = default,
-            int? weightY = default)
+            int? weightY = default,
+            IReadOnlyList<IFilter>? filters = default)
         {
             ImageType = imageType;
             Width = width;
@@ -38,7 +48,21 @@ namespace NCoreUtils.Images
             Optimize = optimize;
             WeightX = weightX;
             WeightY = weightY;
+            Filters = filters ?? _noFilters;
         }
+
+        public ResizeOptions(
+            string? imageType = default,
+            int? width = default,
+            int? height = default,
+            string? resizeMode = default,
+            int? quality = default,
+            bool? optimize = default,
+            int? weightX = default,
+            int? weightY = default,
+            params IFilter[] filters)
+            : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, filters.Length == 0 ? _noFilters : (IReadOnlyList<IFilter>)filters)
+        { }
 
         public override string ToString()
         {
@@ -54,6 +78,13 @@ namespace NCoreUtils.Images
             builder.AppendOption(ref first, nameof(Optimize), Optimize);
             builder.AppendOption(ref first, nameof(WeightX), WeightX);
             builder.AppendOption(ref first, nameof(WeightY), WeightY);
+            if (Filters.Count > 0)
+            {
+                for (var i = 0; i < Filters.Count; ++i)
+                {
+                    builder.AppendOption(ref first, "Filter", Filters[i]);
+                }
+            }
             builder.Append(']');
             return builder.ToString();
         }

@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0-alpha0</Version>
+    <Version>3.1.0-alpha2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Provider.ImageMagick</PackageId>
     <Title>$(PackageId)</Title>
@@ -34,7 +34,7 @@
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Magick.NET-Q16-x64" Version="7.15.4" />
+    <PackageReference Include="Magick.NET-Q16-x64" Version="7.16.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <PackageReference Update="System.ValueTuple" Version="4.5.0" />

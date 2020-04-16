@@ -65,6 +65,19 @@ namespace NCoreUtils.Images.ImageMagick
 
         }
 
+        public void ApplyFilter(IFilter filter)
+        {
+            ThrowIfDisposed();
+            switch (filter)
+            {
+                case Blur blur:
+                    _native.Blur(0.0, blur.Sigma);
+                    break;
+                default:
+                    throw new InternalImageException("not_supported_filter", $"Filter {filter} is not supported by imagemagick provider.");
+            }
+        }
+
         public void Crop(Rectangle rect)
         {
             ThrowIfDisposed();
