@@ -147,11 +147,13 @@ and
     member this.ImageType with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () = this.imageType
     member this.WriteTo (stream : Stream, imageType : ImageType, quality, optimize) =
       this.ThrowIfDisposed ()
+      this.native.AutoOrient ()
       this.native.Quality <- quality
       if optimize then
         this.native.Strip ()
         match imageType with
         | ImageType.Jpeg ->
+          this.native.Strip ()
           this.native.Interlace <- Interlace.Jpeg
           this.native.Settings.SetDefine(MagickFormat.Jpeg, "sampling-factor", "4:2:0")
         | ImageType.Png ->

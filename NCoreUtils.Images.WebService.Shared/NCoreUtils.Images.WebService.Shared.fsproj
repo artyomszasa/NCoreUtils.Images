@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net452</TargetFrameworks>
-    <Version>3.0.0-alpha2</Version>
+    <Version>3.0.0-alpha3</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.WebService.Shared</PackageId>
     <Title>$(PackageId)</Title>
