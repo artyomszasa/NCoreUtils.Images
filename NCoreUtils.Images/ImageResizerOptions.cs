@@ -16,6 +16,6 @@ namespace NCoreUtils.Images
             => Quality.TryGetValue(imageType, out var i) ? i : 85;
 
         bool IImageResizerOptions.Optimize(string imageType)
-            => Optimize.TryGetValue(imageType, out var b) ? b : false;
+            => Optimize.TryGetValue(imageType, out var b) && b;
     }
 }

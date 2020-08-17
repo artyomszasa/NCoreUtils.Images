@@ -65,6 +65,7 @@ namespace NCoreUtils.Images
             var client = CreateClient();
             try
             {
+
                 var contentType = Choose2(overrideContentType, ContentType, "application/octet-stream");
                 var bucketName = uri.Host;
                 var name = uri.AbsolutePath.Trim('/');
@@ -78,6 +79,14 @@ namespace NCoreUtils.Images
                     CacheControl = CacheControl,
                     Name = name
                 };
+                Logger.LogInformation(
+                    "Initializing GCS upload to gs://{0}/{1} with [Content-Type = {2}, CacheControl = {3}, PredefinedAcl = {4}].",
+                    bucketName,
+                    name,
+                    contentType,
+                    CacheControl,
+                    predefinedAcl
+                );
                 var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(gobj));
                 content.Headers.ContentType = _jsonContentType;
                 using var request = new HttpRequestMessage(HttpMethod.Post, initEndpoint) { Content = content };

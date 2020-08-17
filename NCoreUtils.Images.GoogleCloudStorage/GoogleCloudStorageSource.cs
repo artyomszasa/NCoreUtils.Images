@@ -42,8 +42,14 @@ namespace NCoreUtils.Images
             {
                 using var client = CreateClient();
                 var bucketName = Uri.Host;
-                var urlEncodedName = Uri.EscapeDataString(Uri.LocalPath.Trim('/'));
+                var name = Uri.LocalPath.Trim('/');
+                var urlEncodedName = Uri.EscapeDataString(name);
                 var requestUri = CreateDownloadEndpoint(bucketName, urlEncodedName);
+                Logger.LogInformation(
+                    "Downloading GCS object from gs://{0}/{1}.",
+                    bucketName,
+                    name
+                );
                 var token = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadOnlyScopes, cancellationToken).ConfigureAwait(false);
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

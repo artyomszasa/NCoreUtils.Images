@@ -55,7 +55,7 @@ namespace NCoreUtils.Images.GoogleCloudStorage
         async ValueTask<int> FillBuffer(Stream stream, CancellationToken cancellationToken)
         {
             var totalRead = 0;
-            int read = 0;
+            int read;
             do
             {
                 read = await stream.ReadAsync(_buffer.Memory.Slice(totalRead, _buffer.Size - totalRead), cancellationToken).ConfigureAwait(false);

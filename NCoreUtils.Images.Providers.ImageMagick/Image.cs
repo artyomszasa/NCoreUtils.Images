@@ -46,7 +46,14 @@ namespace NCoreUtils.Images.ImageMagick
             _native.Quality = quality;
             if (optimize)
             {
-                _native.Strip();
+                foreach (var profile in _native.ProfileNames)
+                {
+                    if (profile != "icc" && _native.HasProfile(profile))
+                    {
+                        _native.RemoveProfile(profile);
+                    }
+                }
+                // _native.Strip();
                 switch (imageType)
                 {
                     case ImageTypes.Jpeg:

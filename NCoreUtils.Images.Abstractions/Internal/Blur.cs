@@ -24,11 +24,25 @@ namespace NCoreUtils.Images.Internal
 
         public int Emplace(Span<char> span)
         {
+            if (TryEmplace(span, out var used))
+            {
+                return used;
+            }
+            throw new ArgumentException("Insufficient buffer size.", nameof(span));
+        }
+
+        public bool TryEmplace(Span<char> span, out int used)
+        {
             var builder = new SpanBuilder(span);
-            builder.Append("blur(");
-            builder.Append(Sigma, 2);
-            builder.Append(')');
-            return builder.Length;
+            if (builder.TryAppend("blur(")
+                && builder.TryAppend(Sigma, 2)
+                && builder.TryAppend(')'))
+            {
+                used = builder.Length;
+                return true;
+            }
+            used = default;
+            return false;
         }
     }
 }

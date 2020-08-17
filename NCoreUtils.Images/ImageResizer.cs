@@ -43,14 +43,10 @@ namespace NCoreUtils.Images
             };
 
         int DecideQuality(ResizeOptions options, string imageType)
-            => options.Quality.HasValue
-                ? options.Quality.Value
-                : Options.Quality(imageType);
+            => options.Quality ?? Options.Quality(imageType);
 
         bool DecideOptimize(ResizeOptions options, string imageType)
-            => options.Optimize.HasValue
-                ? options.Optimize.Value
-                : Options.Optimize(imageType);
+            => options.Optimize ?? Options.Optimize(imageType);
 
         IStreamTransformation CreateTransformation(Action<string> setContentType, ResizeOptions options)
         {
