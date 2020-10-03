@@ -2,6 +2,7 @@ using System;
 
 namespace NCoreUtils.Images
 {
+    [Serializable]
     public struct ContentInfo : IEquatable<ContentInfo>
     {
         public string? Type { get; }

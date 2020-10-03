@@ -6,10 +6,10 @@
     <RootNamespace>NCoreUtils.Images</RootNamespace>
     <Version>3.1.0-beta02</Version>
     <!-- NuGet -->
-    <PackageId>NCoreUtils.Images.Abstractions</PackageId>
+    <PackageId>NCoreUtils.Images.FileSystem</PackageId>
     <Title>$(PackageId)</Title>
     <Authors>Artyom Antyipin</Authors>
-    <Description>NCoreUtils image management library abstractions.</Description>
+    <Description>Locally mounted file system support for NCoreUtils image management library.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
     <PackageReleaseNotes></PackageReleaseNotes>
@@ -33,16 +33,7 @@
     <EnableFrameworkPathOverride Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">true</EnableFrameworkPathOverride>
     <AssemblySearchPaths Condition="'$(BaseFrameworkPathOverrideForMono)' != ''">$(FrameworkPathOverride)/Facades;$(AssemblySearchPaths)</AssemblySearchPaths>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
-    <PackageReference Update="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
-    <PackageReference Include="Nullable" Version="1.3.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="1.0.8" />
-    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="3.1.0" />
+    <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.csproj" />
   </ItemGroup>
 </Project>

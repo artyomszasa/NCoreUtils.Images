@@ -1,15 +1,25 @@
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Images.Internal;
+using NCoreUtils.Images.Logging;
 using NCoreUtils.IO;
 
 namespace NCoreUtils.Images
 {
     public class ImageResizer : IImageResizer, IImageAnalyzer
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (bool IsExplicit, string ImageType) DecideImageType(ResizeOptions options, IImage image)
+            => options.ImageType switch
+            {
+                null => (false, image.ImageType),
+                string itype => (true, itype)
+            };
+
         protected IImageProvider Provider { get; }
 
         protected ResizerCollection Resizers { get; }
@@ -35,24 +45,23 @@ namespace NCoreUtils.Images
             Options = opts;
         }
 
-        (bool IsExplicit, string ImageType) DecideImageType(ResizeOptions options, IImage image)
-            => options.ImageType switch
-            {
-                null => (false, image.ImageType),
-                string itype => (true, itype)
-            };
-
-        int DecideQuality(ResizeOptions options, string imageType)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int DecideQuality(ResizeOptions options, string imageType)
             => options.Quality ?? Options.Quality(imageType);
 
-        bool DecideOptimize(ResizeOptions options, string imageType)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool DecideOptimize(ResizeOptions options, string imageType)
             => options.Optimize ?? Options.Optimize(imageType);
 
-        IStreamTransformation CreateTransformation(Action<string> setContentType, ResizeOptions options)
+        private IStreamTransformation CreateTransformation(Action<string> setContentType, ResizeOptions options)
         {
-            Logger.LogDebug("Creating transformation with options {0}", options);
+            // Logger.LogDebug("Creating transformation with options {0}", options);
+            if (Logger.IsEnabled(LogLevel.Debug))
+            {
+                Logger.Log(LogLevel.Debug, default, new CreatingTransformationEntry(options), default!, CreatingTransformationEntry.Formatter);
+            }
             var resizeMode = options.ResizeMode ?? ResizeModes.None;
-            if (this.Resizers.TryGetValue(resizeMode, out var resizerFactory))
+            if (Resizers.TryGetValue(resizeMode, out var resizerFactory))
             {
                 return StreamTransformation.Create((input, output, cancellationToken) => TransformAsync(input, output, resizerFactory, options, setContentType, cancellationToken));
             }
@@ -72,12 +81,16 @@ namespace NCoreUtils.Images
             var (isExplicit, imageType) = DecideImageType(options, image);
             var quality = DecideQuality(options, imageType);
             var optimize = DecideOptimize(options, imageType);
-            Logger.LogDebug (
-              "Resizing image with options [ImageType = {0}, Quality = {1}, Optimization = {2}]",
-              isExplicit ? imageType : $"{imageType} (implicit)",
-              quality,
-              optimize
-            );
+            // Logger.LogDebug (
+            //   "Resizing image with computed options [ImageType = {0}, Quality = {1}, Optimization = {2}]",
+            //   isExplicit ? imageType : $"{imageType} (implicit)",
+            //   quality,
+            //   optimize
+            // );
+            if (Logger.IsEnabled(LogLevel.Debug))
+            {
+                Logger.Log(LogLevel.Debug, default, new ResizingImageEntry(imageType, isExplicit, quality, optimize), default!, ResizingImageEntry.Formatter);
+            }
             setContentType(ImageTypes.ToMediaType(imageType));
             var resizer = resizerFactory.CreateResizer(image, options);
             resizer.Resize(image);
@@ -107,7 +120,11 @@ namespace NCoreUtils.Images
                 .ConsumeAsync(StreamConsumer.Delay(_ =>
                 {
                     var ct = contentType ?? "application/octet-stream";
-                    Logger.LogDebug("Initializing image destination with content type {0}.", ct);
+                    // Logger.LogDebug("Initializing image destination with content type {0}.", ct);
+                    if (Logger.IsEnabled(LogLevel.Debug))
+                    {
+                        Logger.Log(LogLevel.Debug, default, new InitializingDestinationEntry(ct), default!, InitializingDestinationEntry.Formatter);
+                    }
                     return new ValueTask<IStreamConsumer>(destination.CreateConsumer(new ContentInfo(ct)));
                 }), cancellationToken);
         }
