@@ -15,11 +15,8 @@ namespace NCoreUtils.Images.Internal
         public override string ToString()
         {
             Span<char> buffer = stackalloc char[256];
-            var builder = new SpanBuilder(buffer);
-            builder.Append("blur(");
-            builder.Append(Sigma, 2);
-            builder.Append(')');
-            return builder.ToString();
+            var size = Emplace(buffer);
+            return buffer.Slice(0, size).ToString();
         }
 
         public int Emplace(Span<char> span)

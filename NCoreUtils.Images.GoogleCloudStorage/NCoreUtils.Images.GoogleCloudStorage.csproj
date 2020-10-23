@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0-beta02</Version>
+    <Version>3.1.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.GoogleCloudStorage</PackageId>
     <Title>$(PackageId)</Title>
@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.49.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.8" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.9" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
   </ItemGroup>

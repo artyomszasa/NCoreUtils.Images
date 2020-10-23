@@ -9,6 +9,9 @@ namespace NCoreUtils.Images
     [Serializable]
     public class ImageException : Exception
     {
+        /// <summary>
+        /// Related error code (see <see cref="ErrorCodes" />).
+        /// </summary>
         public string ErrorCode { get; }
 
         protected ImageException(SerializationInfo info, StreamingContext context)

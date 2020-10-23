@@ -15,9 +15,7 @@ namespace NCoreUtils.Images
         /// Implementation specific error occured while preforming resize or get-info operation.
         public const string InternalError = "internal_error";
 
-        /// <summary>
         /// Generic error.
-        /// </summary>
         public const string GenericError = "generic_error";
     }
 }

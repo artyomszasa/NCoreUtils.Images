@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,9 +7,13 @@ using NCoreUtils.IO;
 
 namespace NCoreUtils.Images
 {
+    /// <summary>
+    /// Defines various extension methods for <see cref="IImageResizer" />.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
     public static class ImageResizerExtensions
     {
-        sealed class StreamSource : IImageSource, IDisposable
+        private sealed class StreamSource : IImageSource, IDisposable
         {
             readonly Stream _stream;
 

@@ -90,7 +90,7 @@ namespace NCoreUtils.Images
             int? weightX = default,
             int? weightY = default,
             params IFilter[] filters)
-            : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, filters.Length == 0 ? _noFilters : (IReadOnlyList<IFilter>)filters)
+            : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, filters.Length == 0 ? _noFilters : filters)
         { }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

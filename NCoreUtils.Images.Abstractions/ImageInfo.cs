@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace NCoreUtils.Images
 {
+    /// <summary>
+    /// Represents information returned by <see cref="IImageAnalyzer" />.
+    /// </summary>
     public class ImageInfo
     {
         public int Width { get; }

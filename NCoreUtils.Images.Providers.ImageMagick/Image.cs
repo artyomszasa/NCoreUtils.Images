@@ -46,6 +46,7 @@ namespace NCoreUtils.Images.ImageMagick
             _native.Quality = quality;
             if (optimize)
             {
+                // strips all meta but the color profile.
                 foreach (var profile in _native.ProfileNames)
                 {
                     if (profile != "icc" && _native.HasProfile(profile))
@@ -53,7 +54,6 @@ namespace NCoreUtils.Images.ImageMagick
                         _native.RemoveProfile(profile);
                     }
                 }
-                // _native.Strip();
                 switch (imageType)
                 {
                     case ImageTypes.Jpeg:

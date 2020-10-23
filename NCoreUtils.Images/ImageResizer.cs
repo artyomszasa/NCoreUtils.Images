@@ -12,7 +12,9 @@ namespace NCoreUtils.Images
 {
     public class ImageResizer : IImageResizer, IImageAnalyzer
     {
+        #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        #endif
         private static (bool IsExplicit, string ImageType) DecideImageType(ResizeOptions options, IImage image)
             => options.ImageType switch
             {

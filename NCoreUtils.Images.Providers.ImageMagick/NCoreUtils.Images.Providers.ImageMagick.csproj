@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0-beta02</Version>
+    <Version>3.1.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Provider.ImageMagick</PackageId>
     <Title>$(PackageId)</Title>

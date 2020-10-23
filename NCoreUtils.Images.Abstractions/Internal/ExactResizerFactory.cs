@@ -4,7 +4,7 @@ namespace NCoreUtils.Images.Internal
 {
     public class ExactResizerFactory : IResizerFactory
     {
-        sealed class ExactResizer : IResizer
+        private sealed class ExactResizer : IResizer
         {
             readonly Size _size;
 
@@ -17,7 +17,7 @@ namespace NCoreUtils.Images.Internal
 
         public static ExactResizerFactory Instance { get; } = new ExactResizerFactory();
 
-        ExactResizerFactory() { }
+        private ExactResizerFactory() { }
 
         public IResizer CreateResizer(IImage image, ResizeOptions options)
         {
@@ -33,7 +33,7 @@ namespace NCoreUtils.Images.Internal
                     var imageSize = image.Size;
                     size = new Size(
                         options.Width.Value,
-                        (int)((double)imageSize.Height / (double)imageSize.Width * (double)options.Width.Value)
+                        (int)((double)imageSize.Height / imageSize.Width * options.Width.Value)
                     );
                 }
             }
@@ -43,7 +43,7 @@ namespace NCoreUtils.Images.Internal
                 {
                     var imageSize = image.Size;
                     size = new Size(
-                        (int)((double)imageSize.Width / (double)imageSize.Height * (double)options.Height.Value),
+                        (int)((double)imageSize.Width / imageSize.Height * options.Height.Value),
                         options.Height.Value
                     );
                 }
