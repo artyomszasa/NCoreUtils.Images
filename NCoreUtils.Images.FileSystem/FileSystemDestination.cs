@@ -29,9 +29,9 @@ namespace NCoreUtils.Images
                 AbsolutePath,
                 FileMode.Create,
                 FileAccess.Write,
-                FileShare.None,
+                FileShare.ReadWrite,
                 BufferSize ?? DefaultBufferSize,
-                true
+                FileOptions.WriteThrough | FileOptions.Asynchronous
             ), BufferSize ?? DefaultBufferSize);
     }
 }

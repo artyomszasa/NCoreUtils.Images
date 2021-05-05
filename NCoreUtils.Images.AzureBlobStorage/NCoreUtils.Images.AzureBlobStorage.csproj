@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NCoreUtils.Images</RootNamespace>
+    <Version>3.1.0-beta01</Version>
+    <!-- NuGet -->
+    <PackageId>NCoreUtils.Images.AzureBlobStorage</PackageId>
+    <Title>$(PackageId)</Title>
+    <Authors>Artyom Antyipin</Authors>
+    <Description>Azure Blob Storage support for NCoreUtils image management library.</Description>
+    <Copyright>Artyom Antyipin</Copyright>
+    <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.Images.git</RepositoryUrl>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Assembly Info -->
+    <Product>NCoreUtils</Product>
+    <AssemblyName>$(PackageId)</AssemblyName>
+    <AssemblyTitle>$(AssemblyName)</AssemblyTitle>
+    <!-- Compilation -->
+    <OutputType>Library</OutputType>
+    <DebugType>portable</DebugType>
+    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.8.1" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="System.Text.Json" Version="4.7.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
