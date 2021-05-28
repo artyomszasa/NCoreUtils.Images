@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
-    <Version>3.1.0</Version>
+    <Version>3.1.1-beta01</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images</PackageId>
     <Title>$(PackageId)</Title>
