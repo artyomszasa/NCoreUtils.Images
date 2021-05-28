@@ -177,6 +177,10 @@ namespace NCoreUtils.Images.ImageMagick
         public void Resize(Size size)
         {
             ThrowIfDisposed();
+            if (StringComparer.OrdinalIgnoreCase.Equals(ImageType, "Pdf"))
+            {
+                _native.Alpha(AlphaOption.Off);
+            }
             _native.Resize(size.Width, size.Height);
         }
 
