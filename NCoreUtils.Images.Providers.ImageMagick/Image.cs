@@ -72,6 +72,18 @@ namespace NCoreUtils.Images.ImageMagick
 
         }
 
+        private void ApplyWaterMark(WaterMark waterMark)
+        {
+            var streamProducer = waterMark.WaterMarkSource.CreateProducer();
+            using (var buffer = new MemoryStream())
+            {
+                streamProducer.ProduceAsync(buffer, default).GetAwaiter().GetResult();
+                buffer.Seek(0, SeekOrigin.Begin);
+                using var img = new MagickImage(buffer);
+                _native.Composite(img, Gravity.Northeast);
+            }
+        }
+
         public void ApplyFilter(IFilter filter)
         {
             ThrowIfDisposed();
@@ -79,6 +91,9 @@ namespace NCoreUtils.Images.ImageMagick
             {
                 case Blur blur:
                     _native.Blur(0.0, blur.Sigma);
+                    break;
+                case WaterMark waterMark:
+                    ApplyWaterMark(waterMark);
                     break;
                 default:
                     throw new InternalImageException("not_supported_filter", $"Filter {filter} is not supported by imagemagick provider.");
