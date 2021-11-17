@@ -23,28 +23,28 @@ namespace NCoreUtils.Images
 
         public sealed class DebugImageDestination : IImageDestination
         {
-            public DebugImageData Data { get; private set; }
+            public DebugImageData? Data { get; private set; }
 
             public IStreamConsumer CreateConsumer(ContentInfo contentInfo)
                 => StreamConsumer.Create(DeserializeAsync).Bind(data => Data = data);
         }
 
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        private static readonly JsonSerializerOptions _jsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
         public static ValueTask SerializeAsync(DebugImageData data, Stream destination, CancellationToken cancellationToken)
-            => new ValueTask(JsonSerializer.SerializeAsync(destination, data, _jsonOptions, cancellationToken));
+            => new(JsonSerializer.SerializeAsync(destination, data, _jsonOptions, cancellationToken));
 
-        public static ValueTask<DebugImageData> DeserializeAsync(Stream source, CancellationToken cancellationToken)
+        public static ValueTask<DebugImageData?> DeserializeAsync(Stream source, CancellationToken cancellationToken)
             => JsonSerializer.DeserializeAsync<DebugImageData>(source, _jsonOptions, cancellationToken);
 
         public static DebugImageSource CreateSource(DebugImageData data)
-            => new DebugImageSource(data);
+            => new(data);
 
         public static DebugImageDestination CreateDestination()
-            => new DebugImageDestination();
+            => new();
 
         public int Width { get; set; }
 

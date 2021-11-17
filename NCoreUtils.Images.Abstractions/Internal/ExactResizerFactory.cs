@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NCoreUtils.Images.Internal
 {
@@ -11,8 +13,8 @@ namespace NCoreUtils.Images.Internal
             public ExactResizer(Size size)
                 => _size = size;
 
-            public void Resize(IImage image)
-                => image.Resize(_size);
+            public ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
+                => image.ResizeAsync(_size, cancellationToken);
         }
 
         public static ExactResizerFactory Instance { get; } = new ExactResizerFactory();

@@ -24,7 +24,7 @@ namespace NCoreUtils.Images.Internal
         public bool Equals(Point other)
             => X == other.X && Y == other.Y;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => obj is Point other && Equals(other);
 
         public override int GetHashCode()

@@ -1,3 +1,6 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace NCoreUtils.Images.Internal
 {
     public class InboxResizerFactory : IResizerFactory
@@ -14,10 +17,10 @@ namespace NCoreUtils.Images.Internal
                 _box = box;
             }
 
-            public void Resize(IImage image)
+            public async ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
             {
-                image.Crop(_rect);
-                image.Resize(_box);
+                await image.CropAsync(_rect, cancellationToken);
+                await image.ResizeAsync(_box, CancellationToken.None);
             }
         }
 

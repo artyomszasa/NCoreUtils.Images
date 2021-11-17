@@ -78,8 +78,8 @@ namespace NCoreUtils.Images
             Action<string> setContentType,
             CancellationToken cancellationToken)
         {
-            using var image = await Provider.FromStreamAsync(input, cancellationToken);
-            image.Normalize();
+            await using var image = await Provider.FromStreamAsync(input, cancellationToken);
+            await image.NormalizeAsync(cancellationToken);
             var (isExplicit, imageType) = DecideImageType(options, image);
             var quality = DecideQuality(options, imageType);
             var optimize = DecideOptimize(options, imageType);
@@ -95,29 +95,29 @@ namespace NCoreUtils.Images
             }
             setContentType(ImageTypes.ToMediaType(imageType));
             var resizer = resizerFactory.CreateResizer(image, options);
-            resizer.Resize(image);
+            await resizer.ResizeAsync(image, cancellationToken);
             foreach (var filter in options.Filters)
             {
-                image.ApplyFilter(filter);
+                await image.ApplyFilterAsync(filter, cancellationToken);
             }
             await image.WriteToAsync(output, imageType, quality, optimize, cancellationToken);
             await output.FlushAsync(cancellationToken);
             output.Close();
         }
 
-        public virtual Task<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default)
-            => source
+        public virtual async ValueTask<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default)
+            => await source
                 .CreateProducer()
                 .ConsumeAsync(StreamConsumer.Create(async (input, cancellationToken) =>
                 {
-                    using var image = await Provider.FromStreamAsync(input, cancellationToken);
-                    return image.GetImageInfo();
-                }));
+                    await using var image = await Provider.FromStreamAsync(input, cancellationToken);
+                    return await image.GetImageInfoAsync(cancellationToken);
+                }), cancellationToken);
 
-        public virtual Task ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public virtual async ValueTask ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             string? contentType = null;
-            return source.CreateProducer()
+            await source.CreateProducer()
                 .Chain(CreateTransformation(ct => contentType = ct, options))
                 .ConsumeAsync(StreamConsumer.Delay(_ =>
                 {

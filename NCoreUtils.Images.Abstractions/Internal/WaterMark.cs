@@ -59,7 +59,7 @@ namespace NCoreUtils.Images.Internal
             }
             else
             {
-                throw new ArgumentException("Image is not serializable.", nameof(WaterMarkSource));
+                throw new InvalidOperationException("Watermark image is not serializable.");
             }
             used = default;
             return false;

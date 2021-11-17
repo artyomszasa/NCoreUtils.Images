@@ -1,7 +1,10 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace NCoreUtils.Images.Internal
 {
     public interface IResizer
     {
-        void Resize(IImage image);
+        ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default);
     }
 }

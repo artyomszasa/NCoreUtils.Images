@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.Images.Internal
 {
-    public interface IImage : IDisposable
+    public interface IImage : IAsyncDisposable
     {
         IImageProvider Provider { get; }
 
@@ -15,15 +15,15 @@ namespace NCoreUtils.Images.Internal
 
         string ImageType { get; }
 
-        void ApplyFilter(IFilter filter);
+        ValueTask ApplyFilterAsync(IFilter filter, CancellationToken cancellationToken = default);
 
-        void Crop(Rectangle rect);
+        ValueTask CropAsync(Rectangle rect, CancellationToken cancellationToken = default);
 
-        ImageInfo GetImageInfo();
+        ValueTask<ImageInfo> GetImageInfoAsync(CancellationToken cancellationToken = default);
 
-        void Normalize();
+        ValueTask NormalizeAsync(CancellationToken cancellationToken = default);
 
-        void Resize(Size size);
+        ValueTask ResizeAsync(Size size, CancellationToken cancellationToken = default);
 
         ValueTask WriteToAsync(Stream stream, string imageType, int quality = 85, bool optimize = true, CancellationToken cancellationToken = default);
     }

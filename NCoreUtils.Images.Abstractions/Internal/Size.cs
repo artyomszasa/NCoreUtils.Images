@@ -25,7 +25,7 @@ namespace NCoreUtils.Images.Internal
             => Width == other.Width
                 && Height == other.Height;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => obj is Size other && Equals(other);
 
         public override int GetHashCode()

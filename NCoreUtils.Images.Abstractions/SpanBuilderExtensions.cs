@@ -70,7 +70,7 @@ namespace NCoreUtils.Images
         public static bool TryAppendOption<T>(this ref SpanBuilder builder, ref bool first, string key, T? value)
             where T : class
         {
-            if (!(value is null))
+            if (value is not null)
             {
                 if (first)
                 {

@@ -10,7 +10,7 @@ namespace NCoreUtils.Images
 {
     public class ResizeOptions : IEmplaceable<ResizeOptions>
     {
-        private static readonly IReadOnlyList<IFilter> _noFilters = new IFilter[0];
+        private static readonly IReadOnlyList<IFilter> _noFilters = Array.Empty<IFilter>();
 
         /// <summary>
         /// Desired output image type. Defaults to the input image type when not set.
@@ -99,7 +99,7 @@ namespace NCoreUtils.Images
             Span<char> buffer = stackalloc char[4 * 1024];
             if (TryEmplace(buffer, out var size))
             {
-                result = buffer.Slice(0, size).ToString();
+                result = buffer[..size].ToString();
                 return true;
             }
             result = default;
@@ -115,7 +115,7 @@ namespace NCoreUtils.Images
             using var memoryBuffer = MemoryPool<char>.Shared.Rent(32 * 1024);
             var buffer = memoryBuffer.Memory.Span;
             var size = Emplace(buffer);
-            return buffer.Slice(0, size).ToString();
+            return buffer[..size].ToString();
         }
 
         public int Emplace(Span<char> span)

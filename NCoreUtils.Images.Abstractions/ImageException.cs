@@ -16,7 +16,7 @@ namespace NCoreUtils.Images
 
         protected ImageException(SerializationInfo info, StreamingContext context)
             : base(info, context)
-            => ErrorCode = info.GetString(nameof(ErrorCode));
+            => ErrorCode = info.GetString(nameof(ErrorCode)) ?? string.Empty;
 
         public ImageException(string errorCode, string description, Exception innerException)
             : base(description, innerException)

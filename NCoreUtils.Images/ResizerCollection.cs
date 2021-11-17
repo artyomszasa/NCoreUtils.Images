@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.Images.Internal;
 
 namespace NCoreUtils.Images
@@ -33,7 +34,12 @@ namespace NCoreUtils.Images
         public IEnumerator<KeyValuePair<string, IResizerFactory>> GetEnumerator()
             => _factories.GetEnumerator();
 
+#if NETSTANDARD2_1
         public bool TryGetValue(string key, out IResizerFactory value)
             => _factories.TryGetValue(key, out value);
+#else
+        public bool TryGetValue(string key, [NotNullWhen(true)] out IResizerFactory? value)
+            => _factories.TryGetValue(key, out value);
+#endif
     }
 }

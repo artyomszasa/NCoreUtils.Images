@@ -40,7 +40,7 @@ namespace NCoreUtils.Images
             => Type == other.Type
                 && Length == other.Length;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => obj is ContentInfo other && Equals(other);
 
         public override int GetHashCode()

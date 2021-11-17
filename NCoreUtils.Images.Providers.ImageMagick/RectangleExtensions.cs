@@ -8,6 +8,6 @@ namespace NCoreUtils.Images.ImageMagick
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MagickGeometry ToMagickGeometry(this in Rectangle rect)
-            => new MagickGeometry(rect.X, rect.Y, rect.Width, rect.Height);
+            => new(rect.X, rect.Y, rect.Width, rect.Height);
     }
 }

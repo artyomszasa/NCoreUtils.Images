@@ -14,6 +14,6 @@ namespace NCoreUtils.Images
         /// <param name="source">Image source.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Image information.</returns>
-        Task<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default);
+        ValueTask<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default);
     }
 }

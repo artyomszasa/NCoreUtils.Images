@@ -48,13 +48,13 @@ namespace NCoreUtils.Images
             Assert.False(ci2.Length.HasValue);
             Assert.Null(ci3.Type);
             Assert.True(ci3.Length.HasValue);
-            Assert.Equal(200, ci3.Length.Value);
+            Assert.Equal(200, ci3.Length!.Value);
             Assert.Null(ci4.Type);
             Assert.True(ci4.Length.HasValue);
-            Assert.Equal(400, ci4.Length.Value);
+            Assert.Equal(400, ci4.Length!.Value);
             Assert.Equal("image/jpeg", ci5.Type);
             Assert.True(ci5.Length.HasValue);
-            Assert.Equal(200, ci5.Length.Value);
+            Assert.Equal(200, ci5.Length!.Value);
 
 #pragma warning disable CS1718
 
@@ -118,7 +118,7 @@ namespace NCoreUtils.Images
         [Fact]
         public void ResizeOptionsTests()
         {
-            var o0 = new ResizeOptions(filters: new Internal.IFilter[0]);
+            var o0 = new ResizeOptions(filters: Array.Empty<Internal.IFilter>());
             var o1 = new ResizeOptions(imageType: ImageTypes.Jpeg);
             var o2 = new ResizeOptions(width: 200);
             var o3 = new ResizeOptions(height: 200);

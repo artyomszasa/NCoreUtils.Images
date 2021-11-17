@@ -1,3 +1,6 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace NCoreUtils.Images.Internal
 {
     public class NoneResizerFactory : IResizerFactory
@@ -8,7 +11,8 @@ namespace NCoreUtils.Images.Internal
 
             NoneResizer() { }
 
-            public void Resize(IImage image) { }
+            public ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
+                => default;
         }
 
 

@@ -16,6 +16,6 @@ namespace NCoreUtils.Images
         /// <param name="destination">Output image destination.</param>
         /// <param name="options">Conversion options.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        Task ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default);
+        ValueTask ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default);
     }
 }

@@ -8,9 +8,9 @@ namespace NCoreUtils.Images
 
         public long? MemoryLimit { get; set; }
 
-        public Dictionary<string, int> Quality { get; } = new Dictionary<string, int>();
+        public Dictionary<string, int> Quality { get; } = new();
 
-        public Dictionary<string, bool> Optimize { get; } = new Dictionary<string, bool>();
+        public Dictionary<string, bool> Optimize { get; } = new();
 
         int IImageResizerOptions.Quality(string imageType)
             => Quality.TryGetValue(imageType, out var i) ? i : 85;

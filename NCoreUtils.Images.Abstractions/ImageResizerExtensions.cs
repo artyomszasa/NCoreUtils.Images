@@ -36,7 +36,7 @@ namespace NCoreUtils.Images
                 => _stream.Dispose();
         }
 
-        sealed class StreamDestination : IImageDestination
+        private sealed class StreamDestination : IImageDestination
         {
             readonly Stream _stream;
 
@@ -47,7 +47,7 @@ namespace NCoreUtils.Images
                 => StreamConsumer.ToStream(_stream);
         }
 
-        sealed class ProducerSource : IImageSource
+        private sealed class ProducerSource : IImageSource
         {
             readonly IStreamProducer _producer;
 
@@ -60,7 +60,7 @@ namespace NCoreUtils.Images
                 => _producer;
         }
 
-        sealed class ConsumerDestination : IImageDestination
+        private sealed class ConsumerDestination : IImageDestination
         {
             readonly IStreamConsumer _consumer;
 
@@ -71,115 +71,127 @@ namespace NCoreUtils.Images
                 => _consumer;
         }
 
-        static FileStream OpenRead(string path)
-            => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 16 * 1024, FileOptions.Asynchronous);
+        private static FileStream OpenRead(string path)
+            => new(path, FileMode.Open, FileAccess.Read, FileShare.Read, 16 * 1024, FileOptions.Asynchronous);
 
-        static FileStream OpenWrite(string path)
-            => new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 16 * 1024, FileOptions.Asynchronous);
+        private static FileStream OpenWrite(string path)
+            => new(path, FileMode.Create, FileAccess.Write, FileShare.None, 16 * 1024, FileOptions.Asynchronous);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IStreamProducer source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        private static void AwaitSync(ValueTask task)
+        {
+            if (task.IsCompleted)
+            {
+                task.GetAwaiter().GetResult();
+            }
+            else
+            {
+                task.AsTask().GetAwaiter().GetResult();
+            }
+        }
+
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IStreamProducer source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(new ProducerSource(source), destination, options, cancellationToken);
 
-        public static async Task ResizeAsync(this IImageResizer resizer, Stream source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static async ValueTask ResizeAsync(this IImageResizer resizer, Stream source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             using var s = new StreamSource(source);
             await resizer.ResizeAsync(s, destination, options, cancellationToken);
         }
 
-        public static Task ResizeAsync(this IImageResizer resizer, string sourcePath, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, string sourcePath, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(OpenRead(sourcePath), destination, options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IImageSource source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IImageSource source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(source, new ConsumerDestination(destination), options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IStreamProducer source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IStreamProducer source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(new ProducerSource(source), destination, options, cancellationToken);
 
-        public static async Task ResizeAsync(this IImageResizer resizer, Stream source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static async ValueTask ResizeAsync(this IImageResizer resizer, Stream source, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             using var s = new StreamSource(source);
             await resizer.ResizeAsync(s, destination, options, cancellationToken);
         }
 
-        public static Task ResizeAsync(this IImageResizer resizer, string sourcePath, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, string sourcePath, IStreamConsumer destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(OpenRead(sourcePath), destination, options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IImageSource source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IImageSource source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(source, new StreamDestination(destination), options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IStreamProducer source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IStreamProducer source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(new ProducerSource(source), destination, options, cancellationToken);
 
-        public static async Task ResizeAsync(this IImageResizer resizer, Stream source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static async ValueTask ResizeAsync(this IImageResizer resizer, Stream source, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             using var s = new StreamSource(source);
             await resizer.ResizeAsync(s, destination, options, cancellationToken);
         }
 
-        public static Task ResizeAsync(this IImageResizer resizer, string sourcePath, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, string sourcePath, Stream destination, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(OpenRead(sourcePath), destination, options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IImageSource source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IImageSource source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(source, OpenWrite(destinationPath), options, cancellationToken);
 
-        public static Task ResizeAsync(this IImageResizer resizer, IStreamProducer source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, IStreamProducer source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(new ProducerSource(source), destinationPath, options, cancellationToken);
 
-        public static async Task ResizeAsync(this IImageResizer resizer, Stream source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static async ValueTask ResizeAsync(this IImageResizer resizer, Stream source, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             using var s = new StreamSource(source);
             await resizer.ResizeAsync(s, destinationPath, options, cancellationToken);
         }
 
-        public static Task ResizeAsync(this IImageResizer resizer, string sourcePath, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
+        public static ValueTask ResizeAsync(this IImageResizer resizer, string sourcePath, string destinationPath, ResizeOptions options, CancellationToken cancellationToken = default)
             => resizer.ResizeAsync(OpenRead(sourcePath), destinationPath, options, cancellationToken);
 
         public static void Resize(this IImageResizer resizer, IImageSource source, IImageDestination destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, IStreamProducer source, IImageDestination destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, Stream source, IImageDestination destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, string sourcePath, IImageDestination destination, ResizeOptions options)
-            => resizer.ResizeAsync(sourcePath, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(sourcePath, destination, options));
 
         public static void Resize(this IImageResizer resizer, IImageSource source, IStreamConsumer destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, IStreamProducer source, IStreamConsumer destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, Stream source, IStreamConsumer destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, string sourcePath, IStreamConsumer destination, ResizeOptions options)
-            => resizer.ResizeAsync(sourcePath, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(sourcePath, destination, options));
 
         public static void Resize(this IImageResizer resizer, IImageSource source, Stream destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, IStreamProducer source, Stream destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, Stream source, Stream destination, ResizeOptions options)
-            => resizer.ResizeAsync(source, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destination, options));
 
         public static void Resize(this IImageResizer resizer, string sourcePath, Stream destination, ResizeOptions options)
-            => resizer.ResizeAsync(sourcePath, destination, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(sourcePath, destination, options));
 
         public static void Resize(this IImageResizer resizer, IImageSource source, string destinationPath, ResizeOptions options)
-            => resizer.ResizeAsync(source, destinationPath, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destinationPath, options));
 
         public static void Resize(this IImageResizer resizer, IStreamProducer source, string destinationPath, ResizeOptions options)
-            => resizer.ResizeAsync(source, destinationPath, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destinationPath, options));
 
         public static void Resize(this IImageResizer resizer, Stream source, string destinationPath, ResizeOptions options)
-            => resizer.ResizeAsync(source, destinationPath, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(source, destinationPath, options));
 
         public static void Resize(this IImageResizer resizer, string sourcePath, string destinationPath, ResizeOptions options)
-            => resizer.ResizeAsync(sourcePath, destinationPath, options).GetAwaiter().GetResult();
+            => AwaitSync(resizer.ResizeAsync(sourcePath, destinationPath, options));
     }
 }

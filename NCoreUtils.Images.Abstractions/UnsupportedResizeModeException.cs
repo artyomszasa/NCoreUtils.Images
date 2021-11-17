@@ -24,7 +24,7 @@ namespace NCoreUtils.Images
         protected UnsupportedResizeModeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            ResizeMode = info.GetString(nameof(ResizeMode));
+            ResizeMode = info.GetString(nameof(ResizeMode)) ?? string.Empty;
             Width = GetNInt(info, nameof(Width));
             Height = GetNInt(info, nameof(Height));
         }

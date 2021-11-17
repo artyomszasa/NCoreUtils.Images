@@ -7,9 +7,9 @@ namespace NCoreUtils.Images.GoogleCloudStorage
 {
     public struct GoogleStorageCredential : IEquatable<GoogleStorageCredential>
     {
-        public static string[] ReadOnlyScopes = new [] { "https://www.googleapis.com/auth/devstorage.read_only" };
+        public static string[] ReadOnlyScopes { get; } = new [] { "https://www.googleapis.com/auth/devstorage.read_only" };
 
-        public static string[] ReadWriteScopes = new [] { "https://www.googleapis.com/auth/devstorage.read_write" };
+        public static string[] ReadWriteScopes { get; } = new [] { "https://www.googleapis.com/auth/devstorage.read_write" };
 
         static bool Eq(GoogleCredential? a, GoogleCredential? b)
         {
@@ -40,10 +40,10 @@ namespace NCoreUtils.Images.GoogleCloudStorage
             => !a.Equals(b);
 
         public static GoogleStorageCredential ViaAccessToken(string accessToken)
-            => new GoogleStorageCredential(accessToken, default);
+            => new(accessToken, default);
 
         public static GoogleStorageCredential ViaGoogleCredenatial(GoogleCredential credential)
-            => new GoogleStorageCredential(default, credential);
+            => new(default, credential);
 
         public string? AccessToken { get; }
 
@@ -59,7 +59,7 @@ namespace NCoreUtils.Images.GoogleCloudStorage
             => StringComparer.InvariantCulture.Equals(AccessToken, other.AccessToken)
                 && Eq(Credential, other.Credential);
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => obj is GoogleStorageCredential other && Equals(other);
 
         public override int GetHashCode()

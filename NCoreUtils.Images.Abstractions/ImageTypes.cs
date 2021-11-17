@@ -8,7 +8,7 @@ namespace NCoreUtils.Images
     /// </summary>
     public static class ImageTypes
     {
-        private static readonly Regex _regexImageMime = new Regex("^image/(.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        private static readonly Regex _regexImageMime = new("^image/(.*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         /// <summary>
         /// Represents JPEG image.

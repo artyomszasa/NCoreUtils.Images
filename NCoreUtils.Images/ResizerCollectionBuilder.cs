@@ -5,7 +5,7 @@ namespace NCoreUtils.Images
 {
     public class ResizerCollectionBuilder
     {
-        readonly Dictionary<string, IResizerFactory> _factories = new Dictionary<string, IResizerFactory>();
+        readonly Dictionary<string, IResizerFactory> _factories = new();
 
         public ResizerCollectionBuilder Add(string name, IResizerFactory factory)
         {
@@ -14,6 +14,6 @@ namespace NCoreUtils.Images
         }
 
         public ResizerCollection Build()
-            => new ResizerCollection(_factories);
+            => new(_factories);
     }
 }

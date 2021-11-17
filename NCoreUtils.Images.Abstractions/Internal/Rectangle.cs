@@ -54,7 +54,7 @@ namespace NCoreUtils.Images.Internal
             => Point == other.Point
                 && Size == other.Size;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => obj is Rectangle other && Equals(other);
 
         public override int GetHashCode()

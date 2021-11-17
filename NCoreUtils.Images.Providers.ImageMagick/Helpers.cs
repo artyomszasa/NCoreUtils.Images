@@ -8,7 +8,7 @@ namespace NCoreUtils.Images.ImageMagick
 {
     static class Helpers
     {
-        static readonly Dictionary<MagickFormat, string> _magickFormatMap = new Dictionary<MagickFormat, string>
+        private static Dictionary<MagickFormat, string> MagickFormatMap { get; } = new()
         {
             { MagickFormat.Jpg, ImageTypes.Jpeg },
             { MagickFormat.Jpeg, ImageTypes.Jpeg },
@@ -29,7 +29,7 @@ namespace NCoreUtils.Images.ImageMagick
             { MagickFormat.WebP, ImageTypes.WebP }
         };
 
-        static readonly Dictionary<string, MagickFormat> _imageTypeMap = new Dictionary<string, MagickFormat>
+        private static Dictionary<string, MagickFormat> ImageTypeMap { get; } = new()
         {
             { "jpg", MagickFormat.Jpg },
             { ImageTypes.Jpeg, MagickFormat.Jpg },
@@ -43,10 +43,10 @@ namespace NCoreUtils.Images.ImageMagick
         static string? ToString<T>(T value) => value?.ToString();
 
         public static string MagickFormatToImageType(MagickFormat format)
-            => _magickFormatMap.TryGetValue(format, out var imageType) ? imageType : format.ToString();
+            => MagickFormatMap.TryGetValue(format, out var imageType) ? imageType : format.ToString();
 
         public static MagickFormat ImageTypeToMagickFormat(string imageType)
-            => _imageTypeMap.TryGetValue(imageType, out var format)
+            => ImageTypeMap.TryGetValue(imageType, out var format)
                 ? format
                 : throw new InvalidOperationException($"Invalid image type \"{imageType}\".");
 

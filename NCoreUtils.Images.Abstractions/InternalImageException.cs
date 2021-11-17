@@ -13,7 +13,7 @@ namespace NCoreUtils.Images
 
         protected InternalImageException(SerializationInfo info, StreamingContext context)
             : base(info, context)
-            => InternalCode = info.GetString(nameof(InternalCode));
+            => InternalCode = info.GetString(nameof(InternalCode)) ?? string.Empty;
 
         public InternalImageException(string internalCode, string description)
             : base(ErrorCodes.InternalError, description)

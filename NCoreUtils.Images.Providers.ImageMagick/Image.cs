@@ -1,90 +1,160 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ImageMagick;
 using NCoreUtils.Images.Internal;
+using NCoreUtils.IO;
 
 namespace NCoreUtils.Images.ImageMagick
 {
-    public sealed class Image : IImage
+    public sealed class Image : IImage, IDisposable
     {
-        readonly MagickImage _native;
-
-        int _isDisposed;
-
-        IImageProvider IImage.Provider => Provider;
-
-        public ImageProvider Provider { get; }
-
-        public Size Size { get; }
-
-        public object NativeImageType => _native.Format;
-
-        public string ImageType { get; }
-
-        public Image(MagickImage native, ImageProvider provider)
+        private static ValueTask WriteToAsync(IMagickImage<ushort> source, Stream stream, string imageType, int quality, bool optimize, CancellationToken cancellationToken)
         {
-            _native = native;
-            Provider = provider;
-            Size = new Size(native.Width, native.Height);
-            ImageType = Helpers.MagickFormatToImageType(native.Format);
-        }
-
-        void ThrowIfDisposed()
-        {
-            if (0 != Interlocked.CompareExchange(ref _isDisposed, 0, 0))
-            {
-                throw new ObjectDisposedException(nameof(Image));
-            }
-        }
-
-        void WriteTo(Stream stream, string imageType, int quality = 85, bool optimize = true)
-        {
-            ThrowIfDisposed();
-            _native.Quality = quality;
+            source.Quality = quality;
             if (optimize)
             {
                 // strips all meta but the color profile.
-                foreach (var profile in _native.ProfileNames)
+                foreach (var profile in source.ProfileNames)
                 {
-                    if (profile != "icc" && _native.HasProfile(profile))
+                    if (profile != "icc" && source.HasProfile(profile))
                     {
-                        _native.RemoveProfile(profile);
+                        source.RemoveProfile(profile);
                     }
                 }
                 switch (imageType)
                 {
                     case ImageTypes.Jpeg:
-                        _native.Interlace = Interlace.Jpeg;
-                        _native.Settings.SetDefine(MagickFormat.Jpeg, "sampling-factor", "4:2:0");
+                        source.Interlace = Interlace.Jpeg;
+                        source.Settings.SetDefine(MagickFormat.Jpeg, "sampling-factor", "4:2:0");
                         break;
                     case ImageTypes.Png:
-                        _native.Interlace = Interlace.Png;
+                        source.Interlace = Interlace.Png;
                         break;
                     case ImageTypes.Gif:
-                        _native.Interlace = Interlace.Gif;
+                        source.Interlace = Interlace.Gif;
                         break;
                 }
             }
-            _native.Write(stream, Helpers.ImageTypeToMagickFormat(imageType));
-
+            var task = source.WriteAsync(stream, Helpers.ImageTypeToMagickFormat(imageType), cancellationToken);
+            if (task.IsCompletedSuccessfully)
+            {
+                return default;
+            }
+            return new ValueTask(task);
         }
 
-        private void ApplyWaterMark(WaterMark waterMark)
+        private static ValueTask WriteToAsync(IMagickImageCollection<ushort> images, Stream stream, string imageType, int quality, bool optimize, CancellationToken cancellationToken)
         {
-            var streamProducer = waterMark.WaterMarkSource.CreateProducer();
-            using (var buffer = new MemoryStream())
+            foreach (var source in images)
             {
-                streamProducer.ProduceAsync(buffer, default).GetAwaiter().GetResult();
-                buffer.Seek(0, SeekOrigin.Begin);
-                using var img = new MagickImage(buffer);
+                source.Quality = quality;
+                if (optimize)
+                {
+                    // strips all meta but the color profile.
+                    foreach (var profile in source.ProfileNames)
+                    {
+                        if (profile != "icc" && source.HasProfile(profile))
+                        {
+                            source.RemoveProfile(profile);
+                        }
+                    }
+                    switch (imageType)
+                    {
+                        case ImageTypes.Jpeg:
+                            source.Interlace = Interlace.Jpeg;
+                            source.Settings.SetDefine(MagickFormat.Jpeg, "sampling-factor", "4:2:0");
+                            break;
+                        case ImageTypes.Png:
+                            source.Interlace = Interlace.Png;
+                            break;
+                        case ImageTypes.Gif:
+                            source.Interlace = Interlace.Gif;
+                            break;
+                    }
+                }
+            }
+            var task = images.WriteAsync(stream, Helpers.ImageTypeToMagickFormat(imageType), cancellationToken);
+            if (task.IsCompletedSuccessfully)
+            {
+                return default;
+            }
+            return new ValueTask(task);
+        }
+
+        readonly IMagickImageCollection<ushort> _native;
+
+        int _isDisposed;
+
+        IImageProvider IImage.Provider => Provider;
+
+        object IImage.NativeImageType => NativeImageType;
+
+        public ImageProvider Provider { get; }
+
+        public Size Size { get; }
+
+        public MagickFormat NativeImageType => _native.Count switch
+        {
+            0 => MagickFormat.Unknown,
+            1 => _native[0].Format,
+            _ => _native[0].Format == MagickFormat.Gif || _native[0].Format == MagickFormat.Gif87
+                ? MagickFormat.Gif
+                : MagickFormat.Unknown
+        };
+
+        public string ImageType { get; }
+
+        public Image(IMagickImageCollection<ushort> native, ImageProvider provider)
+        {
+            _native = native;
+            Provider = provider;
+            Size = _native.Count switch
+            {
+                0 => default,
+                1 => new Size(native[0].Width, native[0].Height),
+                _ => native.Aggregate(default(Size), (size, i) => new Size(Math.Max(size.Width, i.Width), Math.Max(size.Height, i.Height)))
+            };
+            ImageType = Helpers.MagickFormatToImageType(NativeImageType);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfDisposed()
+        {
+            if (0 != Interlocked.CompareExchange(ref _isDisposed, 0, 0))
+            {
+                throw new ObjectDisposedException("Image");
+            }
+        }
+
+        public ValueTask WriteToAsync(Stream stream, string imageType, int quality = 85, bool optimize = true, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            return _native.Count switch
+            {
+                0 => throw new InvalidOperationException("Unable to write empty image."),
+                1 => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
+                _ => WriteToAsync(_native, stream, imageType, quality, optimize, cancellationToken),
+            };
+        }
+
+        private async ValueTask ApplyWaterMarkAsync(WaterMark waterMark, CancellationToken cancellationToken)
+        {
+            using var waterMarkImage = await waterMark.WaterMarkSource
+                .CreateProducer()
+                .ConsumeAsync(StreamConsumer.Create(Provider.FromStreamAsync), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (waterMarkImage._native.Count > 0)
+            {
                 if (waterMark.X.HasValue && waterMark.Y.HasValue)
                 {
-                    img.Resize(waterMark.X.Value, waterMark.Y.Value);
+                    await waterMarkImage.ResizeAsync(new Size(waterMark.X.Value, waterMark.Y.Value), cancellationToken);
                 }
-
                 var gravity = waterMark.Gravity switch
                 {
                     WaterMarkGravity.Center => Gravity.Center,
@@ -99,130 +169,173 @@ namespace NCoreUtils.Images.ImageMagick
                     WaterMarkGravity.Southeast => Gravity.Southeast,
                     _ => throw new NotImplementedException($"'{waterMark.Gravity}' gravity not implmeneted."),
                 };
-                _native.Composite(img, gravity);
+                foreach (var img in _native)
+                {
+                    img.Composite(waterMarkImage._native[0], gravity);
+                }
             }
         }
 
-        public void ApplyFilter(IFilter filter)
+        public ValueTask ApplyFilterAsync(IFilter filter, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
             switch (filter)
             {
                 case Blur blur:
-                    _native.Blur(0.0, blur.Sigma);
-                    break;
+                    foreach (var img in _native)
+                    {
+                        img.Blur(0.0, blur.Sigma);
+                    }
+                    return default;
                 case WaterMark waterMark:
-                    ApplyWaterMark(waterMark);
-                    break;
+                    return ApplyWaterMarkAsync(waterMark, cancellationToken);
                 default:
                     throw new InternalImageException("not_supported_filter", $"Filter {filter} is not supported by imagemagick provider.");
             }
         }
 
-        public void Crop(Rectangle rect)
+        public ValueTask CropAsync(Rectangle rect, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            _native.Crop(rect.ToMagickGeometry());
-            _native.RePage();
-        }
-
-        public void Dispose()
-        {
-            if (0 == Interlocked.CompareExchange(ref _isDisposed, 1, 0))
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (var img in _native)
             {
-                _native.Dispose();
+                img.Crop(rect.ToMagickGeometry());
             }
+            _native.RePage();
+            return default;
         }
 
-        public ImageInfo GetImageInfo()
+        public ValueTask<ImageInfo> GetImageInfoAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             var iptc = new Dictionary<string, string>();
             var exif = new Dictionary<string, string>();
-            try
+            foreach (var img in _native)
             {
-                var iptcProfile = _native.GetIptcProfile();
-                if (null != iptcProfile)
+                try
                 {
-                    foreach (var value in iptcProfile.Values)
+                    var iptcProfile = img.GetIptcProfile();
+                    if (null != iptcProfile)
                     {
-                        var tag = value.Tag.ToString();
-                        if (!iptc.ContainsKey(tag))
-                        {
-                            iptc.Add(tag, value.Value);
-                        }
-                    }
-                }
-            }
-            catch (Exception exn)
-            {
-                Console.WriteLine(exn);
-            }
-            try
-            {
-                var exifProfile = _native.GetExifProfile();
-                if (null != exifProfile)
-                {
-                    foreach (var value in exifProfile.Values)
-                    {
-                        var v = Helpers.StringifyImageData(value.GetValue());
-                        if (null != v)
+                        foreach (var value in iptcProfile.Values)
                         {
                             var tag = value.Tag.ToString();
-                            if (!exif.ContainsKey(tag))
+                            if (!iptc.ContainsKey(tag))
                             {
-                                exif.Add(tag, v);
+                                iptc.Add(tag, value.Value);
                             }
                         }
                     }
                 }
-            }
-            catch (Exception exn)
-            {
-                Console.WriteLine(exn);
+                catch (Exception exn)
+                {
+                    Console.WriteLine(exn);
+                }
+                try
+                {
+                    var exifProfile = img.GetExifProfile();
+                    if (null != exifProfile)
+                    {
+                        foreach (var value in exifProfile.Values)
+                        {
+                            var v = Helpers.StringifyImageData(value.GetValue());
+                            if (null != v)
+                            {
+                                var tag = value.Tag.ToString();
+                                if (!exif.ContainsKey(tag))
+                                {
+                                    exif.Add(tag, v);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception exn)
+                {
+                    Console.WriteLine(exn);
+                }
             }
             int xResolution;
             int yResolution;
-            var density = _native.Density;
-            if (density.Units == DensityUnit.PixelsPerCentimeter)
+            if (_native.Count > 0)
             {
-                xResolution = (int)Math.Round(density.X * 2.54);
-                yResolution = (int)Math.Round(density.Y * 2.54);
+                var density = _native[0].Density;
+                if (density.Units == DensityUnit.PixelsPerCentimeter)
+                {
+                    xResolution = (int)Math.Round(density.X * 2.54);
+                    yResolution = (int)Math.Round(density.Y * 2.54);
+                }
+                else
+                {
+                    xResolution = (int)density.X;
+                    yResolution = (int)density.Y;
+                }
             }
             else
             {
-                xResolution = (int)density.X;
-                yResolution = (int)density.Y;
+                xResolution = 0;
+                yResolution = 0;
             }
-            return new ImageInfo(Size.Width, Size.Height, xResolution, yResolution, iptc, exif);
+            return new ValueTask<ImageInfo>(new ImageInfo(Size.Width, Size.Height, xResolution, yResolution, iptc, exif));
         }
 
-        public void Normalize()
+        [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "cancellationToken")]
+        public ValueTask NormalizeAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            _native.AutoOrient();
-            try
+            foreach (var img in _native)
             {
-                _native.GetExifProfile()?.SetValue(ExifTag.Orientation, (ushort)0);
+                img.AutoOrient();
+                try
+                {
+                    img.GetExifProfile()?.SetValue(ExifTag.Orientation, (ushort)0);
+                }
+                catch { }
             }
-            catch { }
-        }
-
-        public void Resize(Size size)
-        {
-            ThrowIfDisposed();
-            if (StringComparer.OrdinalIgnoreCase.Equals(ImageType, "Pdf"))
-            {
-                _native.Alpha(AlphaOption.Off);
-            }
-            _native.Resize(size.Width, size.Height);
-        }
-
-        public ValueTask WriteToAsync(Stream stream, string imageType, int quality = 85, bool optimize = true, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteTo(stream, imageType, quality, optimize);
             return default;
         }
+
+        public ValueTask ResizeAsync(Size size, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            foreach (var img in _native)
+            {
+                if (img.Format == MagickFormat.Pdf)
+                {
+                    img.Alpha(AlphaOption.Off);
+                }
+                img.Resize(size.Width, size.Height);
+            }
+            return default;
+        }
+
+        #region disposable
+
+        private void Dispose(bool disposing)
+        {
+            if (0 == Interlocked.CompareExchange(ref _isDisposed, 1, 0))
+            {
+                if (disposing)
+                {
+                    _native.Dispose();
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose(true);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
+        }
+
+        #endregion
     }
 }

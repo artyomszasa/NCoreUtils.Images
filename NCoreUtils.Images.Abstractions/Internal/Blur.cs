@@ -16,7 +16,7 @@ namespace NCoreUtils.Images.Internal
         {
             Span<char> buffer = stackalloc char[256];
             var size = Emplace(buffer);
-            return buffer.Slice(0, size).ToString();
+            return buffer[..size].ToString();
         }
 
         public int Emplace(Span<char> span)

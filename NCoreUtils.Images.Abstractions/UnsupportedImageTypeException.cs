@@ -13,7 +13,7 @@ namespace NCoreUtils.Images
 
         protected UnsupportedImageTypeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
-            => ImageType = info.GetString(nameof(ImageType));
+            => ImageType = info.GetString(nameof(ImageType)) ?? string.Empty;
 
         public UnsupportedImageTypeException(string imageType, string description, Exception innerException)
             : base(ErrorCodes.UnsupportedImageType, description, innerException)
