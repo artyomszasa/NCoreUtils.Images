@@ -3,5 +3,7 @@
     <Version>6.0.0-alpha00</Version>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <FxNugetVersion>6.0.0</FxNugetVersion>
+    <Fx3NugetVersion>3.1.16</Fx3NugetVersion>
   </PropertyGroup>
 </Project>

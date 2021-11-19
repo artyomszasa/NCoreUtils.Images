@@ -25,9 +25,14 @@
   <PropertyGroup>
     <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(Fx3NugetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6' ">
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(FxNugetVersion)" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Magick.NET-Q16-x64" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="NCoreUtils.IO" Version="3.1.0.1" />
   </ItemGroup>
   <ItemGroup>
