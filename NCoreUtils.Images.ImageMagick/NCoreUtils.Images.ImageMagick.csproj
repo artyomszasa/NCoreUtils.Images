@@ -29,4 +29,7 @@
     <ProjectReference Include="..\NCoreUtils.Images\NCoreUtils.Images.csproj" />
     <ProjectReference Include="..\NCoreUtils.Images.Providers.ImageMagick\NCoreUtils.Images.Providers.ImageMagick.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
+  </ItemGroup>
 </Project>

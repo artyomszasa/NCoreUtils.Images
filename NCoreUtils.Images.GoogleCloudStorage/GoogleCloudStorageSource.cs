@@ -46,18 +46,26 @@ namespace NCoreUtils.Images
                 var urlEncodedName = Uri.EscapeDataString(name);
                 var requestUri = CreateDownloadEndpoint(bucketName, urlEncodedName);
                 Logger.LogInformation(
-                    "Downloading GCS object from gs://{0}/{1}.",
+                    "Downloading GCS object from gs://{Bucket}/{Name}.",
                     bucketName,
                     name
                 );
-                var token = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadOnlyScopes, cancellationToken).ConfigureAwait(false);
+                var token = await Credential
+                    .GetAccessTokenAsync(GoogleStorageCredential.ReadOnlyScopes, cancellationToken)
+                    .ConfigureAwait(false);
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                using var response = await client
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                    .ConfigureAwait(false);
                 switch (response.StatusCode)
                 {
                     case HttpStatusCode.OK:
+#if NETSTANDARD2_1
                         await response.Content.CopyToAsync(output).ConfigureAwait(false);
+#else
+                        await response.Content.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+#endif
                         break;
                     default:
                         throw new GoogleCloudStorageAccessException($"Objects.get failed, status code = {response.StatusCode}, uri = {requestUri}.");

@@ -12,7 +12,7 @@ namespace NCoreUtils.Images
 
         public int? BufferSize { get; }
 
-        public Uri Uri => new Uri($"file://{AbsolutePath}", UriKind.Absolute);
+        public Uri Uri => new($"file://{AbsolutePath}", UriKind.Absolute);
 
         public bool Reusable => true;
 

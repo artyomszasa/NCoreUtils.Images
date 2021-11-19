@@ -40,6 +40,11 @@ namespace NCoreUtils.Images
         /// </summary>
         public const string WebP = "webp";
 
+        /// <summary>
+        /// Represents PDF "image".
+        /// </summary>
+        public const string Pdf = "pdf";
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string OfExtension(string ext)
             => ext switch
@@ -65,6 +70,7 @@ namespace NCoreUtils.Images
                 Png => "image/png",
                 Gif => "image/gif",
                 WebP => "image/webp",
+                Pdf => "application/pdf",
                 _ => $"image/{imageType}"
             };
 
@@ -75,6 +81,8 @@ namespace NCoreUtils.Images
                 "image/jpeg" => Jpeg,
                 "image/p-jpeg" => Jpeg,
                 "image/jpg" => Jpeg,
+                "application/pdf" => Pdf,
+                "application/x-pdf" => Pdf,
                 _ => _regexImageMime.Match(mediaType) switch
                 {
                     Match m when m.Success => m.Groups[1].Value,

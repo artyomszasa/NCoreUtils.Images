@@ -1,7 +1,6 @@
 ﻿namespace NCoreUtils.Images.Internal
 {
     public enum WaterMarkGravity
-
     {
         //
         // Summary:
@@ -10,7 +9,9 @@
         //
         // Summary:
         //     Forget.
+#pragma warning disable CA1069
         Forget = 0,
+#pragma warning restore CA1069
         //
         // Summary:
         //     Northwest.

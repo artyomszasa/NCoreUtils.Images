@@ -105,7 +105,9 @@ namespace NCoreUtils.Images.ImageMagick
             1 => _native[0].Format,
             _ => _native[0].Format == MagickFormat.Gif || _native[0].Format == MagickFormat.Gif87
                 ? MagickFormat.Gif
-                : MagickFormat.Unknown
+                : _native[0].Format == MagickFormat.Pdf
+                    ? MagickFormat.Pdf
+                    : MagickFormat.Unknown
         };
 
         public string ImageType { get; }
@@ -120,7 +122,13 @@ namespace NCoreUtils.Images.ImageMagick
                 1 => new Size(native[0].Width, native[0].Height),
                 _ => native.Aggregate(default(Size), (size, i) => new Size(Math.Max(size.Width, i.Width), Math.Max(size.Height, i.Height)))
             };
-            ImageType = Helpers.MagickFormatToImageType(NativeImageType);
+            var nativeImageType = NativeImageType;
+            ImageType = Helpers.MagickFormatToImageType(nativeImageType);
+            // GIF: ensure all subimages have the same size
+            if (_native.Count > 0 && nativeImageType != MagickFormat.Pdf)
+            {
+                _native.Coalesce();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,6 +147,7 @@ namespace NCoreUtils.Images.ImageMagick
             {
                 0 => throw new InvalidOperationException("Unable to write empty image."),
                 1 => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
+                _ when imageType != ImageTypes.Pdf && imageType != ImageTypes.Gif => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
                 _ => WriteToAsync(_native, stream, imageType, quality, optimize, cancellationToken),
             };
         }
@@ -281,7 +290,6 @@ namespace NCoreUtils.Images.ImageMagick
             return new ValueTask<ImageInfo>(new ImageInfo(Size.Width, Size.Height, xResolution, yResolution, iptc, exif));
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "cancellationToken")]
         public ValueTask NormalizeAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();

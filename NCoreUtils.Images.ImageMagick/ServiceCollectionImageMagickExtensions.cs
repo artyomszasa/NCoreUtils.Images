@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NCoreUtils.Images.ImageMagick;
 
 namespace NCoreUtils.Images
@@ -10,6 +11,14 @@ namespace NCoreUtils.Images
             this IServiceCollection services,
             bool suppressDefaultResizers = false,
             Action<ResizerCollectionBuilder>? configure = default)
-            => services.AddImageResizer<ImageProvider>(suppressDefaultResizers, configure);
+            => services
+                .AddOptions<ImageMagickImageProviderConfiguration>()
+                    .Services
+                .AddTransient<IImageMagickImageProviderConfiguration>(
+                    serviceProvider => serviceProvider
+                        .GetRequiredService<IOptionsMonitor<ImageMagickImageProviderConfiguration>>()
+                        .CurrentValue
+                )
+                .AddImageResizer<ImageProvider>(suppressDefaultResizers, configure);
     }
 }

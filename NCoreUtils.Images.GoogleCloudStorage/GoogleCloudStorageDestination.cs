@@ -80,7 +80,7 @@ namespace NCoreUtils.Images
                     Name = name
                 };
                 Logger.LogInformation(
-                    "Initializing GCS upload to gs://{0}/{1} with [Content-Type = {2}, CacheControl = {3}, PredefinedAcl = {4}].",
+                    "Initializing GCS upload to gs://{Bucket}/{Name} with [Content-Type = {ContentType}, Cache-Control = {CacheControl}, PredefinedAcl = {PredefinedAcl}].",
                     bucketName,
                     name,
                     contentType,

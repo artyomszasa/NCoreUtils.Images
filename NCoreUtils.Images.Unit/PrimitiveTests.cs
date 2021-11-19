@@ -21,14 +21,16 @@ namespace NCoreUtils.Images
             public TestException() : base() { }
         }
 
+#pragma warning disable SYSLIB0011
         private static object Reserialize<T>(T value)
         {
             var formatter = new BinaryFormatter();
             using var buffer = new MemoryStream();
-            formatter.Serialize(buffer, value);
+            formatter.Serialize(buffer, value!);
             buffer.Seek(0, SeekOrigin.Begin);
             return formatter.Deserialize(buffer);
         }
+#pragma warning restore SYSLIB0011
 
         [Fact]
         [MethodImpl(MethodImplOptions.NoInlining|MethodImplOptions.NoOptimization)]

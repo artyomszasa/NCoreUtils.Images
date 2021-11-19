@@ -64,7 +64,7 @@ namespace NCoreUtils.Images.Logging
             Span<char> buffer = stackalloc char[4 * 1024];
             if (TryEmplace(buffer, out var size))
             {
-                result = buffer.Slice(0, size).ToString();
+                result = buffer[..size].ToString();
                 return true;
             }
             result = default;
@@ -80,7 +80,7 @@ namespace NCoreUtils.Images.Logging
             using var memoryBuffer = MemoryPool<char>.Shared.Rent(32 * 1024);
             var buffer = memoryBuffer.Memory.Span;
             var size = Emplace(buffer);
-            return buffer.Slice(0, size).ToString();
+            return buffer[..size].ToString();
         }
     }
 }

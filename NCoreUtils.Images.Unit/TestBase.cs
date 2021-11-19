@@ -17,6 +17,9 @@ namespace NCoreUtils.Images
         }
 
         void IDisposable.Dispose()
-            => _serviceProvider.Dispose();
+        {
+            GC.SuppressFinalize(this);
+            _serviceProvider.Dispose();
+        }
     }
 }
