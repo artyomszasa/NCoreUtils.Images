@@ -12,9 +12,7 @@ namespace NCoreUtils.Images
 {
     public class GoogleCloudStorageDestination : GoogleCloudStorageRecordDescriptor, IImageDestination, ISerializableImageResource
     {
-        static readonly MediaTypeHeaderValue _jsonContentType = MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
-
-        static string Choose2(string? option1, string? option2, string fallback)
+        private static string Choose2(string? option1, string? option2, string fallback)
         {
             if (string.IsNullOrEmpty(option1))
             {
@@ -22,9 +20,6 @@ namespace NCoreUtils.Images
             }
             return option1!;
         }
-
-        static string CreateInitEndpoint(string bucketName, string acl)
-            => $"https://www.googleapis.com/upload/storage/v1/b/{bucketName}/o?uploadType=resumable&predefinedAcl={acl}";
 
         Uri ISerializableImageResource.Uri
         {
@@ -55,56 +50,36 @@ namespace NCoreUtils.Images
             string? contentType = default,
             string? cacheControl = default,
             bool isPublic = false,
-            IHttpClientFactory? httpClientFactory = default,
+            GoogleCloudStorageUtils? utils = default,
             ILogger<GoogleCloudStorageDestination>? logger = default)
-            : base(uri, credential, contentType, cacheControl, isPublic, httpClientFactory, logger)
+            : base(uri, credential, contentType, cacheControl, isPublic, utils, logger)
         { }
 
-        async Task<IStreamConsumer> CreateUploadConsumerAsync(Uri uri, string? overrideContentType, CancellationToken cancellationToken)
-        {
-            var client = CreateClient();
-            try
+        public IStreamConsumer CreateConsumer(ContentInfo contentInfo)
+            => StreamConsumer.Create(async (stream, cancellationToken) =>
             {
-
-                var contentType = Choose2(overrideContentType, ContentType, "application/octet-stream");
-                var bucketName = uri.Host;
-                var name = uri.AbsolutePath.Trim('/');
-                var predefinedAcl = IsPublic ? PredefinedAcls.Public : PredefinedAcls.Private;
-                var initEndpoint = CreateInitEndpoint(bucketName, predefinedAcl);
-                var token = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken).ConfigureAwait(false);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                var gobj = new GoogleObjectData
-                {
-                    ContentType = contentType,
-                    CacheControl = CacheControl,
-                    Name = name
-                };
+                var bucket = Uri.Host;
+                var name = Uri.AbsolutePath.Trim('/');
+                var contentType = Choose2(contentInfo.Type, ContentType, "application/octet-stream");
+                var accessToken = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken).ConfigureAwait(false);
                 Logger.LogInformation(
-                    "Initializing GCS upload to gs://{Bucket}/{Name} with [Content-Type = {ContentType}, Cache-Control = {CacheControl}, PredefinedAcl = {PredefinedAcl}].",
-                    bucketName,
+                    "Initializing GCS upload to gs://{Bucket}/{Name} with [Content-Type = {ContentType}, Cache-Control = {CacheControl}, IsPublic = {IsPublic}].",
+                    bucket,
                     name,
                     contentType,
                     CacheControl,
-                    predefinedAcl
+                    IsPublic
                 );
-                var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(gobj));
-                content.Headers.ContentType = _jsonContentType;
-                using var request = new HttpRequestMessage(HttpMethod.Post, initEndpoint) { Content = content };
-                request.Headers.Add("X-Upload-Content-Type", contentType);
-                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
-                var uploadEndpoint = response.Headers.Location ?? throw new GoogleCloudStorageUploadException("Resumable upload response contans no location.");
-                return new GoogleCloudStorageUploaderConsumer(client, uploadEndpoint, contentType);
-            }
-            catch (Exception)
-            {
-                // if no GoogleCloudStorageUploaderConsumer is created client should be disposed
-                client.Dispose();
-                throw;
-            }
-        }
-
-        public IStreamConsumer CreateConsumer(ContentInfo contentInfo)
-            => StreamConsumer.Delay((cancellationToken) => new ValueTask<IStreamConsumer>(CreateUploadConsumerAsync(Uri, contentInfo.Type, cancellationToken)));
+                await Utils.UploadAsync(
+                    bucket: bucket,
+                    name: name,
+                    source: stream,
+                    contentType: contentType,
+                    cacheControl: CacheControl,
+                    isPublic: IsPublic,
+                    accessToken: accessToken,
+                    cancellationToken: cancellationToken
+                );
+            });
     }
 }

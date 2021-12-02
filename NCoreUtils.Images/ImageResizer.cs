@@ -105,8 +105,8 @@ namespace NCoreUtils.Images
             output.Close();
         }
 
-        public virtual async ValueTask<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default)
-            => await source
+        public virtual ValueTask<ImageInfo> AnalyzeAsync(IImageSource source, CancellationToken cancellationToken = default)
+            => source
                 .CreateProducer()
                 .ConsumeAsync(StreamConsumer.Create(async (input, cancellationToken) =>
                 {
@@ -114,10 +114,10 @@ namespace NCoreUtils.Images
                     return await image.GetImageInfoAsync(cancellationToken);
                 }), cancellationToken);
 
-        public virtual async ValueTask ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
+        public virtual ValueTask ResizeAsync(IImageSource source, IImageDestination destination, ResizeOptions options, CancellationToken cancellationToken = default)
         {
             string? contentType = null;
-            await source.CreateProducer()
+            return source.CreateProducer()
                 .Chain(CreateTransformation(ct => contentType = ct, options))
                 .ConsumeAsync(StreamConsumer.Delay(_ =>
                 {

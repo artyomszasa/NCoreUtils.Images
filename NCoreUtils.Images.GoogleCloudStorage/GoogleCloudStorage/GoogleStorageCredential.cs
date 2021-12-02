@@ -7,11 +7,11 @@ namespace NCoreUtils.Images.GoogleCloudStorage
 {
     public struct GoogleStorageCredential : IEquatable<GoogleStorageCredential>
     {
-        public static string[] ReadOnlyScopes { get; } = new [] { "https://www.googleapis.com/auth/devstorage.read_only" };
+        public static string[] ReadOnlyScopes { get; } = new [] { GoogleCloudStorageUtils.ReadOnlyScope };
 
-        public static string[] ReadWriteScopes { get; } = new [] { "https://www.googleapis.com/auth/devstorage.read_write" };
+        public static string[] ReadWriteScopes { get; } = new [] { GoogleCloudStorageUtils.ReadWriteScope };
 
-        static bool Eq(GoogleCredential? a, GoogleCredential? b)
+        private static bool Eq(GoogleCredential? a, GoogleCredential? b)
         {
             if (a is null)
             {
@@ -24,10 +24,10 @@ namespace NCoreUtils.Images.GoogleCloudStorage
             return ReferenceEquals(a, b) || a.Equals(b);
         }
 
-        static Task<string> GetAccessTokenForRequestAsync(GoogleCredential credential, string[] scopes, CancellationToken cancellationToken)
+        private static Task<string> GetAccessTokenForRequestAsync(GoogleCredential credential, string[] scopes, CancellationToken cancellationToken)
             => credential.CreateScoped(scopes).UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
 
-        static async Task<string> GetAccessTokenForRequestAsync(string[] scopes, CancellationToken cancellationToken)
+        private static async Task<string> GetAccessTokenForRequestAsync(string[] scopes, CancellationToken cancellationToken)
         {
             var credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken).ConfigureAwait(false);
             return await GetAccessTokenForRequestAsync(credential, scopes, cancellationToken).ConfigureAwait(false);

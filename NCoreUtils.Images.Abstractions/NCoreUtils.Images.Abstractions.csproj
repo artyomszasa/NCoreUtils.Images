@@ -22,7 +22,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="1.0.8" />
-    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="3.1.0.1" />
+    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="3.0.0" />
+    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="6.0.0" />
   </ItemGroup>
 </Project>

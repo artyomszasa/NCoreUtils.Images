@@ -14,6 +14,18 @@ namespace NCoreUtils.Images.ImageMagick
 {
     public sealed class Image : IImage, IDisposable
     {
+        private static HashSet<string> MultiImageTypes { get; } = new HashSet<string>
+        {
+            ImageTypes.Pdf,
+            ImageTypes.Gif,
+            ImageTypes.WebP
+        };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool SupportsMultiImageOutput(string imageType)
+            => MultiImageTypes.Contains(imageType);
+
+
         private static ValueTask WriteToAsync(IMagickImage<ushort> source, Stream stream, string imageType, int quality, bool optimize, CancellationToken cancellationToken)
         {
             source.Quality = quality;
@@ -147,7 +159,7 @@ namespace NCoreUtils.Images.ImageMagick
             {
                 0 => throw new InvalidOperationException("Unable to write empty image."),
                 1 => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
-                _ when imageType != ImageTypes.Pdf && imageType != ImageTypes.Gif => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
+                _ when !SupportsMultiImageOutput(imageType) => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
                 _ => WriteToAsync(_native, stream, imageType, quality, optimize, cancellationToken),
             };
         }

@@ -29,7 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.55.0" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="NCoreUtils.Extensions.Google.Cloud.Storage" Version="6.0.0" />
     <PackageReference Include="System.Text.Json" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
