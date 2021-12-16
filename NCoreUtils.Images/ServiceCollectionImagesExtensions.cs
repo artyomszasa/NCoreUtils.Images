@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Images.Internal;
 
@@ -6,7 +7,7 @@ namespace NCoreUtils.Images
 {
     public static class ServiceCollectionImagesExtensions
     {
-        public static IServiceCollection AddImageResizer<TProvider>(
+        public static IServiceCollection AddImageResizer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TProvider>(
             this IServiceCollection services,
             ServiceLifetime serviceLifetime,
             bool suppressDefaultResizers = false,
@@ -49,7 +50,7 @@ namespace NCoreUtils.Images
             return services;
         }
 
-        public static IServiceCollection AddImageResizer<TProvider>(
+        public static IServiceCollection AddImageResizer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TProvider>(
             this IServiceCollection services,
             bool suppressDefaultResizers = false,
             Action<ResizerCollectionBuilder>? configure = default)

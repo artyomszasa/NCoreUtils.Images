@@ -195,7 +195,7 @@ namespace NCoreUtils.Images.ImageMagick
         }
 
         async ValueTask<IImage> IImageProvider.FromStreamAsync(Stream source, CancellationToken cancellationToken)
-            => await FromStreamAsync(source,cancellationToken);
+            => await FromStreamSyncOrAsync(source, cancellationToken);
 
         private void EnableDetailedManagedLogging(ILoggerFactory loggerFactory)
         {
@@ -274,9 +274,16 @@ namespace NCoreUtils.Images.ImageMagick
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "cancellationToken")]
-        [SuppressMessage("Style", "IDE0060:Remove unused parameter", MessageId = "cancellationToken")]
-        public ValueTask<Image> FromStreamAsync(Stream source, CancellationToken cancellationToken = default)
+        internal async ValueTask<Image> FromStreamSyncOrAsync(Stream source, CancellationToken cancellationToken)
+            => (Configuration?.ForceAsync ?? false)
+                ? await FromStreamAsync(source, cancellationToken)
+                : FromStream(source);
+
+        /// <summary>
+        /// Initializes new instance of <see cref="Image" /> synchronously.
+        /// </summary>
+        /// <param name="source">Stream containing image data.</param>
+        public Image FromStream(Stream source)
         {
             MagickReadSettings settings;
             var configure = Configuration?.ConfigureReadSettings;
@@ -294,7 +301,22 @@ namespace NCoreUtils.Images.ImageMagick
                 configure(settings);
             }
             var collection = new MagickImageCollection(source, settings);
-            return new ValueTask<Image>(new Image(collection, this));
+            return new Image(collection, this);
+        }
+
+        /// <summary>
+        /// Initializes new instance of <see cref="Image" /> asynchronously. The read operation is still synchronous yet
+        /// it it forced to be performed as a separate task. This allowes returning immediately which may be important
+        /// if otherwise stream production is blocked.
+        /// </summary>
+        /// <param name="source">Stream containing image data.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        [SuppressMessage("Microsoft.Performance", "CA1801:ReviewUnusedParameters", MessageId = "cancellationToken")]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter", MessageId = "cancellationToken")]
+        public async Task<Image> FromStreamAsync(Stream source, CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            return FromStream(source);
         }
     }
 }

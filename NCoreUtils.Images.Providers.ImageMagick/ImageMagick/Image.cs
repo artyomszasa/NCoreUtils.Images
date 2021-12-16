@@ -168,7 +168,7 @@ namespace NCoreUtils.Images.ImageMagick
         {
             using var waterMarkImage = await waterMark.WaterMarkSource
                 .CreateProducer()
-                .ConsumeAsync(StreamConsumer.Create(Provider.FromStreamAsync), cancellationToken);
+                .ConsumeAsync(StreamConsumer.Create(Provider.FromStreamSyncOrAsync), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (waterMarkImage._native.Count > 0)
             {

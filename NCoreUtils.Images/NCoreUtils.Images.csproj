@@ -20,7 +20,7 @@
     <DebugType>portable</DebugType>
     <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>FS2003</NoWarn>
+    <NoWarn Condition=" '$(TargetFramework)' == 'netstandard2.1' ">CS0436</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.csproj" />
@@ -35,5 +35,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.IO" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
+    <Compile Remove="CodeAnalysis\**" />
   </ItemGroup>
 </Project>

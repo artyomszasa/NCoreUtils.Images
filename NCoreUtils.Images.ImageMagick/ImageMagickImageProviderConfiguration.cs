@@ -9,6 +9,9 @@ namespace NCoreUtils.Images
 
         public bool EnableResourceTracking { get; set; } = true;
 
+        /// <inheritdoc />
+        public bool ForceAsync { get; set; } = false;
+
         public Action<MagickReadSettings> ConfigureReadSettings { get; }
             = settings =>
             {
