@@ -23,6 +23,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Prevent warnings from unused code in dependencies -->
     <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
 </Project>

@@ -45,6 +45,11 @@ namespace NCoreUtils.Images
         /// </summary>
         public const string Pdf = "pdf";
 
+        /// <summary>
+        /// Represents ICO "image".
+        /// </summary>
+        public const string Ico = "ico";
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string OfExtension(string ext)
             => ext switch
@@ -71,6 +76,7 @@ namespace NCoreUtils.Images
                 Gif => "image/gif",
                 WebP => "image/webp",
                 Pdf => "application/pdf",
+                Ico => "image/x-icon",
                 _ => $"image/{imageType}"
             };
 
@@ -83,6 +89,7 @@ namespace NCoreUtils.Images
                 "image/jpg" => Jpeg,
                 "application/pdf" => Pdf,
                 "application/x-pdf" => Pdf,
+                "image/x-icon" => Ico,
                 _ => _regexImageMime.Match(mediaType) switch
                 {
                     Match m when m.Success => m.Groups[1].Value,

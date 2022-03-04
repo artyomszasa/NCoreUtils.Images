@@ -27,7 +27,9 @@ namespace NCoreUtils.Images.ImageMagick
             { MagickFormat.Tiff64, ImageTypes.Tiff },
             { MagickFormat.Tiff, ImageTypes.Tiff },
             { MagickFormat.WebP, ImageTypes.WebP },
-            { MagickFormat.Pdf, ImageTypes.Pdf }
+            { MagickFormat.Pdf, ImageTypes.Pdf },
+            { MagickFormat.Ico, ImageTypes.Ico },
+            { MagickFormat.Icon, ImageTypes.Ico }
         };
 
         private static Dictionary<string, MagickFormat> ImageTypeMap { get; } = new()
@@ -39,7 +41,8 @@ namespace NCoreUtils.Images.ImageMagick
             { ImageTypes.Gif, MagickFormat.Gif },
             { ImageTypes.Tiff, MagickFormat.Tiff },
             { ImageTypes.WebP, MagickFormat.WebP },
-            { ImageTypes.Pdf, MagickFormat.Pdf }
+            { ImageTypes.Pdf, MagickFormat.Pdf },
+            { ImageTypes.Ico, MagickFormat.Ico }
         };
 
         static string? ToString<T>(T value) => value?.ToString();

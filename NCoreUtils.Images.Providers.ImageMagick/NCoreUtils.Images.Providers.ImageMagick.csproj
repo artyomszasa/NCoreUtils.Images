@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Provider.ImageMagick</PackageId>
@@ -28,12 +28,12 @@
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(Fx3NugetVersion)" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(FxNugetVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Magick.NET-Q16-x64" Version="8.4.0" />
-    <PackageReference Include="NCoreUtils.IO" Version="6.0.0" />
+    <PackageReference Include="Magick.NET-Q16-x64" Version="10.0.0" />
+    <PackageReference Include="NCoreUtils.IO" Version="6.0.0.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images.Abstractions\NCoreUtils.Images.Abstractions.csproj" />

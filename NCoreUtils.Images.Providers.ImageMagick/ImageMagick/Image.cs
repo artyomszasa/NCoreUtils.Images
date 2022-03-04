@@ -25,6 +25,17 @@ namespace NCoreUtils.Images.ImageMagick
         private static bool SupportsMultiImageOutput(string imageType)
             => MultiImageTypes.Contains(imageType);
 
+        private static IReadOnlyList<int> IcoSizes { get; } = new[]
+        {
+            16,
+            32,
+            48,
+            64,
+            128,
+            256,
+            512
+        };
+
 
         private static ValueTask WriteToAsync(IMagickImage<ushort> source, Stream stream, string imageType, int quality, bool optimize, CancellationToken cancellationToken)
         {
@@ -99,6 +110,52 @@ namespace NCoreUtils.Images.ImageMagick
             return new ValueTask(task);
         }
 
+        private static Random Rnd { get; } = new();
+
+#pragma warning disable IDE0060
+        private static async ValueTask WriteIcoToAsync(IMagickImage<ushort> source, Stream stream, CancellationToken cancellationToken)
+#pragma warning restore IDE0060
+        {
+            var w = source.Width;
+            if (w == source.Height && w > 16 && w % 16 == 0)
+            {
+                // if target width is dividable by 16 then create smaller images as well
+                var sizes = IcoSizes
+                    .Where(size => size < w)
+                    .Append(w)
+                    .Reverse();
+                var sizesString = string.Join(',', sizes);
+                source.Settings.SetDefine("icon:auto-resize", sizesString);
+                // FIXME: due to Magick.NET bug the output must be written using pathname
+                var tmpFilePath = GetTempIcoPath();
+                try
+                {
+                    source.Write(tmpFilePath, MagickFormat.Ico);
+                    await using var tmpStream = new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 32 * 1024, FileOptions.SequentialScan | FileOptions.Asynchronous);
+                    await tmpStream.CopyToAsync(stream, 32 * 1024, cancellationToken);
+                }
+                finally
+                {
+                    if (File.Exists(tmpFilePath))
+                    {
+                        File.Delete(tmpFilePath);
+                    }
+                }
+
+            }
+            else
+            {
+                await source.WriteAsync(stream, MagickFormat.Ico, cancellationToken);
+            }
+
+            static string GetTempIcoPath()
+            {
+                var tempPath = Path.GetTempPath();
+                var ticks = DateTimeOffset.Now.UtcTicks;
+                return Path.Combine(tempPath, $"{ticks}-{Rnd.Next()}.ico");
+            }
+        }
+
         readonly IMagickImageCollection<ushort> _native;
 
         int _isDisposed;
@@ -158,6 +215,7 @@ namespace NCoreUtils.Images.ImageMagick
             return _native.Count switch
             {
                 0 => throw new InvalidOperationException("Unable to write empty image."),
+                1 when imageType == ImageTypes.Ico => WriteIcoToAsync(_native[0], stream, cancellationToken),
                 1 => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
                 _ when !SupportsMultiImageOutput(imageType) => WriteToAsync(_native[0], stream, imageType, quality, optimize, cancellationToken),
                 _ => WriteToAsync(_native, stream, imageType, quality, optimize, cancellationToken),

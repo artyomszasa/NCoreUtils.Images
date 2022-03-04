@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NCoreUtils.Images.Internal;
 
@@ -67,7 +68,7 @@ namespace NCoreUtils.Images
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryAppendOption<T>(this ref SpanBuilder builder, ref bool first, string key, T? value)
+        public static bool TryAppendOption<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this ref SpanBuilder builder, ref bool first, string key, T? value)
             where T : class
         {
             if (value is not null)

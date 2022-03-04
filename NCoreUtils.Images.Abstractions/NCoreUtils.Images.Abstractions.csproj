@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images.Abstractions</PackageId>
@@ -21,8 +21,11 @@
     <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+    <Compile Remove="CodeAnalysis\**" />
+  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="3.0.0" />
-    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="6.0.0" />
+    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="3.0.0.1" />
+    <PackageReference Include="NCoreUtils.IO.Abstractions" Version="6.0.0.1" />
   </ItemGroup>
 </Project>

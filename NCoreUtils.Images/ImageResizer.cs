@@ -83,12 +83,6 @@ namespace NCoreUtils.Images
             var (isExplicit, imageType) = DecideImageType(options, image);
             var quality = DecideQuality(options, imageType);
             var optimize = DecideOptimize(options, imageType);
-            // Logger.LogDebug (
-            //   "Resizing image with computed options [ImageType = {0}, Quality = {1}, Optimization = {2}]",
-            //   isExplicit ? imageType : $"{imageType} (implicit)",
-            //   quality,
-            //   optimize
-            // );
             if (Logger.IsEnabled(LogLevel.Debug))
             {
                 Logger.Log(LogLevel.Debug, default, new ResizingImageEntry(imageType, isExplicit, quality, optimize), default!, ResizingImageEntry.Formatter);
