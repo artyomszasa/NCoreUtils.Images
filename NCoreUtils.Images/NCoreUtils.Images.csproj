@@ -34,7 +34,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(FxNugetVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.IO" Version="6.0.0.1" />
+    <PackageReference Include="NCoreUtils.IO" Version="6.0.1" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
     <Compile Remove="CodeAnalysis\**" />
