@@ -72,6 +72,37 @@ namespace NCoreUtils.Images.ImageMagick
 
         }
 
+        private void ApplyWaterMark(WaterMark waterMark)
+        {
+            var streamProducer = waterMark.WaterMarkSource.CreateProducer();
+            using (var buffer = new MemoryStream())
+            {
+                streamProducer.ProduceAsync(buffer, default).GetAwaiter().GetResult();
+                buffer.Seek(0, SeekOrigin.Begin);
+                using var img = new MagickImage(buffer);
+                if (waterMark.X.HasValue && waterMark.Y.HasValue)
+                {
+                    img.Resize(waterMark.X.Value, waterMark.Y.Value);
+                }
+
+                var gravity = waterMark.Gravity switch
+                {
+                    WaterMarkGravity.Center => Gravity.Center,
+                    WaterMarkGravity.Undefined => Gravity.Undefined,
+                    WaterMarkGravity.Northwest => Gravity.Northwest,
+                    WaterMarkGravity.North => Gravity.North,
+                    WaterMarkGravity.Northeast => Gravity.Northeast,
+                    WaterMarkGravity.West => Gravity.West,
+                    WaterMarkGravity.East => Gravity.East,
+                    WaterMarkGravity.Southwest => Gravity.Southwest,
+                    WaterMarkGravity.South => Gravity.South,
+                    WaterMarkGravity.Southeast => Gravity.Southeast,
+                    _ => throw new NotImplementedException($"'{waterMark.Gravity}' gravity not implmeneted."),
+                };
+                _native.Composite(img, gravity);
+            }
+        }
+
         public void ApplyFilter(IFilter filter)
         {
             ThrowIfDisposed();
@@ -79,6 +110,9 @@ namespace NCoreUtils.Images.ImageMagick
             {
                 case Blur blur:
                     _native.Blur(0.0, blur.Sigma);
+                    break;
+                case WaterMark waterMark:
+                    ApplyWaterMark(waterMark);
                     break;
                 default:
                     throw new InternalImageException("not_supported_filter", $"Filter {filter} is not supported by imagemagick provider.");
@@ -177,6 +211,10 @@ namespace NCoreUtils.Images.ImageMagick
         public void Resize(Size size)
         {
             ThrowIfDisposed();
+            if (StringComparer.OrdinalIgnoreCase.Equals(ImageType, "Pdf"))
+            {
+                _native.Alpha(AlphaOption.Off);
+            }
             _native.Resize(size.Width, size.Height);
         }
 

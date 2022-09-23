@@ -15,7 +15,16 @@ namespace NCoreUtils.Images.ImageMagick
         }
 
         public IImage FromStream(Stream source)
-            => new Image(new MagickImage(source), this);
+        {
+            var settings = new MagickReadSettings
+            {
+                Density = new Density(600, 600), // higher PDF quality
+#if DEBUG
+                Verbose = true
+#endif
+            };
+            return new Image(new MagickImage(source, settings), this);
+        }
 
         public ValueTask<IImage> FromStreamAsync(Stream source, CancellationToken cancellationToken = default)
             => new ValueTask<IImage>(FromStream(source));
