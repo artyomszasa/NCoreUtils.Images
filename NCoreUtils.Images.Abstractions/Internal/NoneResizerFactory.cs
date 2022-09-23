@@ -5,7 +5,7 @@ namespace NCoreUtils.Images.Internal
 {
     public class NoneResizerFactory : IResizerFactory
     {
-        sealed class NoneResizer : IResizer
+        private sealed class NoneResizer : IResizer
         {
             public static NoneResizer Instance { get; } = new NoneResizer();
 

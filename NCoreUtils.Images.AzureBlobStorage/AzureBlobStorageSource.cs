@@ -48,9 +48,9 @@ namespace NCoreUtils.Images
                 #else
                 using var source
                 #endif
-                    = await client.OpenReadAsync(new BlobOpenReadOptions(false), cancellationToken);
-                await source.CopyToAsync(stream, 32 * 1024, cancellationToken);
-                await stream.FlushAsync(cancellationToken);
+                    = await client.OpenReadAsync(new BlobOpenReadOptions(false), cancellationToken).ConfigureAwait(false);
+                await source.CopyToAsync(stream, 32 * 1024, cancellationToken).ConfigureAwait(false);
+                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             });
     }
 }

@@ -10,8 +10,6 @@ namespace NCoreUtils.Images
 {
     public class ResizeOptions : IEmplaceable<ResizeOptions>
     {
-        private static readonly IReadOnlyList<IFilter> _noFilters = Array.Empty<IFilter>();
-
         /// <summary>
         /// Desired output image type. Defaults to the input image type when not set.
         /// </summary>
@@ -77,7 +75,7 @@ namespace NCoreUtils.Images
             Optimize = optimize;
             WeightX = weightX;
             WeightY = weightY;
-            Filters = filters ?? _noFilters;
+            Filters = filters ?? Array.Empty<IFilter>();
         }
 
         public ResizeOptions(
@@ -90,7 +88,7 @@ namespace NCoreUtils.Images
             int? weightX = default,
             int? weightY = default,
             params IFilter[] filters)
-            : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, filters.Length == 0 ? _noFilters : filters)
+            : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, (IReadOnlyList<IFilter>)(filters.Length == 0 ? Array.Empty<IFilter>() : filters))
         { }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

@@ -5,22 +5,22 @@ namespace NCoreUtils.Images.Internal
 {
     public class InboxResizerFactory : IResizerFactory
     {
-        sealed class InboxResize : IResizer
+        private sealed class InboxResize : IResizer
         {
-            readonly Rectangle _rect;
+            private Rectangle Rect { get; }
 
-            readonly Size _box;
+            private Size Box { get; }
 
             public InboxResize(Rectangle rect, Size box)
             {
-                _rect = rect;
-                _box = box;
+                Rect = rect;
+                Box = box;
             }
 
             public async ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
             {
-                await image.CropAsync(_rect, cancellationToken);
-                await image.ResizeAsync(_box, CancellationToken.None);
+                await image.CropAsync(Rect, cancellationToken).ConfigureAwait(false);
+                await image.ResizeAsync(Box, CancellationToken.None).ConfigureAwait(false);
             }
         }
 
@@ -43,10 +43,10 @@ namespace NCoreUtils.Images.Internal
                 var margin = (source.Height - inputHeight) / 2;
                 if (weightY.HasValue)
                 {
-                    var diff = (double)weightY.Value - sourceHeight / 2.0;
+                    var diff = weightY.Value - sourceHeight / 2.0;
                     var normalized = diff / (sourceHeight / 2.0);
                     var mul = 1.0 + normalized;
-                    margin = (int)((double)margin * mul);
+                    margin = (int)(margin * mul);
                 }
                 return new Rectangle(0, margin, source.Width, inputHeight);
             }
@@ -56,10 +56,10 @@ namespace NCoreUtils.Images.Internal
                 var margin = (source.Width - inputWidth) / 2;
                 if (weightX.HasValue)
                 {
-                    var diff = (double)weightX.Value - sourceWidth / 2.0;
+                    var diff = weightX.Value - sourceWidth / 2.0;
                     var normalized = diff / (sourceWidth / 2.0);
                     var mul = 1.0 + normalized;
-                    margin = (int)((double)margin * mul);
+                    margin = (int)(margin * mul);
                 }
                 return new Rectangle(margin, 0, inputWidth, source.Height);
             }

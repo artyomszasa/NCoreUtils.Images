@@ -44,7 +44,7 @@ namespace NCoreUtils.Images
                 var options = new BlobUploadOptions();
                 options.HttpHeaders ??= new BlobHttpHeaders();
                 options.HttpHeaders.ContentType = contentInfo.Type ?? "application/octet-stream";
-                await client.UploadAsync(stream, options, cancellationToken);
+                await client.UploadAsync(stream, options, cancellationToken).ConfigureAwait(false);
             });
     }
 }

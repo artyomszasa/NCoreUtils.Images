@@ -39,13 +39,15 @@ namespace NCoreUtils.Images
             {
                 var bucket = Uri.Host;
                 var name = Uri.AbsolutePath.Trim('/');
-                var accessToken = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken).ConfigureAwait(false);
+                var accessToken = await Credential
+                    .GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken)
+                    .ConfigureAwait(false);
                 Logger.LogInformation(
                     "Downloading GCS object from gs://{Bucket}/{Name}.",
                     bucket,
                     name
                 );
-                await Utils.DownloadAsync(bucket, name, output, accessToken, cancellationToken);
+                await Utils.DownloadAsync(bucket, name, output, accessToken, cancellationToken).ConfigureAwait(false);
             });
     }
 }

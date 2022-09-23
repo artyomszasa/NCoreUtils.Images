@@ -1,9 +1,5 @@
 using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Images.GoogleCloudStorage;
 using NCoreUtils.IO;
@@ -61,7 +57,9 @@ namespace NCoreUtils.Images
                 var bucket = Uri.Host;
                 var name = Uri.AbsolutePath.Trim('/');
                 var contentType = Choose2(contentInfo.Type, ContentType, "application/octet-stream");
-                var accessToken = await Credential.GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken).ConfigureAwait(false);
+                var accessToken = await Credential
+                    .GetAccessTokenAsync(GoogleStorageCredential.ReadWriteScopes, cancellationToken)
+                    .ConfigureAwait(false);
                 Logger.LogInformation(
                     "Initializing GCS upload to gs://{Bucket}/{Name} with [Content-Type = {ContentType}, Cache-Control = {CacheControl}, IsPublic = {IsPublic}].",
                     bucket,
@@ -79,7 +77,7 @@ namespace NCoreUtils.Images
                     isPublic: IsPublic,
                     accessToken: accessToken,
                     cancellationToken: cancellationToken
-                );
+                ).ConfigureAwait(false);
             });
     }
 }

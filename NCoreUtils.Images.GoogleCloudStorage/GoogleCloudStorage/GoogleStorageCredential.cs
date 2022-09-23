@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
@@ -24,13 +25,26 @@ namespace NCoreUtils.Images.GoogleCloudStorage
             return ReferenceEquals(a, b) || a.Equals(b);
         }
 
-        private static Task<string> GetAccessTokenForRequestAsync(GoogleCredential credential, string[] scopes, CancellationToken cancellationToken)
-            => credential.CreateScoped(scopes).UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
+        private static async Task<string> GetAccessTokenForRequestAsync(GoogleCredential credential, string[] scopes, bool firstTry, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await credential.CreateScoped(scopes).UnderlyingCredential.GetAccessTokenForRequestAsync(cancellationToken: cancellationToken);
+            }
+            catch (IOException)
+            {
+                if (firstTry)
+                {
+                    return await GetAccessTokenForRequestAsync(credential, scopes, false, cancellationToken);
+                }
+                throw;
+            }
+        }
 
-        private static async Task<string> GetAccessTokenForRequestAsync(string[] scopes, CancellationToken cancellationToken)
+        private static async Task<string> GetAccessTokenForRequestAsync(string[] scopes, bool firstTry, CancellationToken cancellationToken)
         {
             var credential = await GoogleCredential.GetApplicationDefaultAsync(cancellationToken).ConfigureAwait(false);
-            return await GetAccessTokenForRequestAsync(credential, scopes, cancellationToken).ConfigureAwait(false);
+            return await GetAccessTokenForRequestAsync(credential, scopes, firstTry, cancellationToken).ConfigureAwait(false);
         }
 
         public static bool operator==(GoogleStorageCredential a, GoogleStorageCredential b)
@@ -73,8 +87,8 @@ namespace NCoreUtils.Images.GoogleCloudStorage
                 return new ValueTask<string>(AccessToken!);
             }
             var task = Credential is null
-                ? GetAccessTokenForRequestAsync(scopes, cancellationToken)
-                : GetAccessTokenForRequestAsync(Credential, scopes, cancellationToken);
+                ? GetAccessTokenForRequestAsync(scopes, true, cancellationToken)
+                : GetAccessTokenForRequestAsync(Credential, scopes, true, cancellationToken);
             return new ValueTask<string>(task);
         }
     }

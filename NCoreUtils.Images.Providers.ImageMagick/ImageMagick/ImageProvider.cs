@@ -71,7 +71,7 @@ namespace NCoreUtils.Images.ImageMagick
             return (BigInteger)Math.Round(i);
         }
 
-        private bool TryParseSizes(ReadOnlySpan<char> source, out (Range bucket, BigInteger diff, BigInteger used, BigInteger total) sizes)
+        private static bool TryParseSizes(ReadOnlySpan<char> source, out (Range bucket, BigInteger diff, BigInteger used, BigInteger total) sizes)
         {
             var iColon = source.IndexOf(':');
             if (-1 == iColon)
@@ -274,10 +274,14 @@ namespace NCoreUtils.Images.ImageMagick
             }
         }
 
-        internal async ValueTask<Image> FromStreamSyncOrAsync(Stream source, CancellationToken cancellationToken)
-            => (Configuration?.ForceAsync ?? false)
-                ? await FromStreamAsync(source, cancellationToken)
-                : FromStream(source);
+        internal ValueTask<Image> FromStreamSyncOrAsync(Stream source, CancellationToken cancellationToken)
+        {
+            if (Configuration is not null && Configuration.ForceAsync)
+            {
+                return new(FromStreamAsync(source, cancellationToken));
+            }
+            return new(FromStream(source));
+        }
 
         /// <summary>
         /// Initializes new instance of <see cref="Image" /> synchronously.

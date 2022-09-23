@@ -13,9 +13,11 @@ namespace NCoreUtils.Images
         public Dictionary<string, bool> Optimize { get; } = new();
 
         int IImageResizerOptions.Quality(string imageType)
-            => Quality.TryGetValue(imageType, out var i) ? i : 85;
+            => Quality.TryGetValue(imageType, out var i) || Quality.TryGetValue("Default", out i)
+                ? i
+                : 85;
 
         bool IImageResizerOptions.Optimize(string imageType)
-            => Optimize.TryGetValue(imageType, out var b) && b;
+            => (Optimize.TryGetValue(imageType, out var b) || Optimize.TryGetValue("Default", out b)) && b;
     }
 }

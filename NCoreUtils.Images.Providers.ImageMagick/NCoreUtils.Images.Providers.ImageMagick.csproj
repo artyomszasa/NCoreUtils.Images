@@ -32,7 +32,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(FxNugetVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Magick.NET-Q16-x64" Version="10.0.0" />
+    <PackageReference Include="Magick.NET-Q16-x64" Version="12.1.0" />
     <PackageReference Include="NCoreUtils.IO" Version="6.0.1" />
   </ItemGroup>
   <ItemGroup>

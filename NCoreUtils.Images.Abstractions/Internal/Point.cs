@@ -3,7 +3,7 @@ using System;
 namespace NCoreUtils.Images.Internal
 {
     [Serializable]
-    public struct Point : IEquatable<Point>
+    public readonly struct Point : IEquatable<Point>
     {
         public static bool operator==(Point a, Point b)
             => a.Equals(b);

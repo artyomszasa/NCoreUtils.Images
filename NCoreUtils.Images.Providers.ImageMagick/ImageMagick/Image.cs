@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -37,7 +36,13 @@ namespace NCoreUtils.Images.ImageMagick
         };
 
 
-        private static ValueTask WriteToAsync(IMagickImage<ushort> source, Stream stream, string imageType, int quality, bool optimize, CancellationToken cancellationToken)
+        private static ValueTask WriteToAsync(
+            IMagickImage<ushort> source,
+            Stream stream,
+            string imageType,
+            int quality,
+            bool optimize,
+            CancellationToken cancellationToken)
         {
             source.Quality = quality;
             if (optimize)
@@ -110,11 +115,7 @@ namespace NCoreUtils.Images.ImageMagick
             return new ValueTask(task);
         }
 
-        private static Random Rnd { get; } = new();
-
-#pragma warning disable IDE0060
         private static async ValueTask WriteIcoToAsync(IMagickImage<ushort> source, Stream stream, CancellationToken cancellationToken)
-#pragma warning restore IDE0060
         {
             var w = source.Width;
             if (w == source.Height && w > 16 && w % 16 == 0)
@@ -126,33 +127,11 @@ namespace NCoreUtils.Images.ImageMagick
                     .Reverse();
                 var sizesString = string.Join(',', sizes);
                 source.Settings.SetDefine("icon:auto-resize", sizesString);
-                // FIXME: due to Magick.NET bug the output must be written using pathname
-                var tmpFilePath = GetTempIcoPath();
-                try
-                {
-                    source.Write(tmpFilePath, MagickFormat.Ico);
-                    await using var tmpStream = new FileStream(tmpFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 32 * 1024, FileOptions.SequentialScan | FileOptions.Asynchronous);
-                    await tmpStream.CopyToAsync(stream, 32 * 1024, cancellationToken);
-                }
-                finally
-                {
-                    if (File.Exists(tmpFilePath))
-                    {
-                        File.Delete(tmpFilePath);
-                    }
-                }
-
+                await source.WriteAsync(stream, MagickFormat.Ico, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 await source.WriteAsync(stream, MagickFormat.Ico, cancellationToken);
-            }
-
-            static string GetTempIcoPath()
-            {
-                var tempPath = Path.GetTempPath();
-                var ticks = DateTimeOffset.Now.UtcTicks;
-                return Path.Combine(tempPath, $"{ticks}-{Rnd.Next()}.ico");
             }
         }
 
@@ -224,9 +203,11 @@ namespace NCoreUtils.Images.ImageMagick
 
         private async ValueTask ApplyWaterMarkAsync(WaterMark waterMark, CancellationToken cancellationToken)
         {
+            ThrowIfDisposed();
             using var waterMarkImage = await waterMark.WaterMarkSource
                 .CreateProducer()
-                .ConsumeAsync(StreamConsumer.Create(Provider.FromStreamSyncOrAsync), cancellationToken);
+                .ConsumeAsync(StreamConsumer.Create(Provider.FromStreamSyncOrAsync), cancellationToken)
+                .ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             if (waterMarkImage._native.Count > 0)
             {

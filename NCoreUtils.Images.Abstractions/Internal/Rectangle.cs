@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace NCoreUtils.Images.Internal
 {
     [Serializable]
-    public struct Rectangle : IEquatable<Rectangle>
+    public readonly struct Rectangle : IEquatable<Rectangle>
     {
         public static bool operator==(Rectangle a, Rectangle b)
             => a.Equals(b);

@@ -3,7 +3,7 @@ using System;
 namespace NCoreUtils.Images.Internal
 {
     [Serializable]
-    public struct Size : IEquatable<Size>
+    public readonly struct Size : IEquatable<Size>
     {
         public static bool operator==(Size a, Size b)
             => a.Equals(b);

@@ -6,7 +6,7 @@ namespace NCoreUtils.Images
     /// Represents optional minimal information about the content.
     /// </summary>
     [Serializable]
-    public struct ContentInfo : IEquatable<ContentInfo>
+    public readonly struct ContentInfo : IEquatable<ContentInfo>
     {
         public static bool operator==(ContentInfo a, ContentInfo b)
             => a.Equals(b);
