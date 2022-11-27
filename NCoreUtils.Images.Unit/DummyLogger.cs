@@ -11,6 +11,7 @@ namespace NCoreUtils.Images
         }
 
         public IDisposable BeginScope<TState>(TState state)
+            where TState : notnull
             => new DummyDisposable();
 
         public bool IsEnabled(LogLevel logLevel)

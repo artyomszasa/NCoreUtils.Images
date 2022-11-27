@@ -1,24 +1,23 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace NCoreUtils.Images
+namespace NCoreUtils.Images;
+
+/// <summary>
+/// Thrown if the supplied image is either unsupported or unprocessable.
+/// </summary>
+[Serializable]
+public class InvalidImageException : ImageException
 {
-    /// <summary>
-    /// Thrown if the supplied image is either unsupported or unprocessable.
-    /// </summary>
-    [Serializable]
-    public class InvalidImageException : ImageException
-    {
-        protected InvalidImageException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        { }
+    protected InvalidImageException(SerializationInfo info, StreamingContext context)
+        : base(info, context)
+    { }
 
-        public InvalidImageException(string description)
-            : base(ErrorCodes.InvalidImage, description)
-        { }
+    public InvalidImageException(string description)
+        : base(ErrorCodes.InvalidImage, description)
+    { }
 
-        public InvalidImageException(string description, Exception innerException)
-            : base(ErrorCodes.InvalidImage, description, innerException)
-        { }
-    }
+    public InvalidImageException(string description, Exception innerException)
+        : base(ErrorCodes.InvalidImage, description, innerException)
+    { }
 }

@@ -2,12 +2,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NCoreUtils.Images.Internal
-{
-    public interface IImageProvider
-    {
-        long MemoryLimit { get; set; }
+namespace NCoreUtils.Images.Internal;
 
-        ValueTask<IImage> FromStreamAsync(Stream source, CancellationToken cancellationToken = default);
-    }
+public interface IImageProvider
+{
+    long MemoryLimit { get; set; }
+
+    ValueTask<IImage> FromStreamAsync(Stream source, CancellationToken cancellationToken = default);
 }

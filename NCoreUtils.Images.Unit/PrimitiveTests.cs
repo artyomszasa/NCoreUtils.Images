@@ -36,25 +36,25 @@ namespace NCoreUtils.Images
         [MethodImpl(MethodImplOptions.NoInlining|MethodImplOptions.NoOptimization)]
         public void ContentInfoTests()
         {
-            ContentInfo ci0 = default;
-            var ci1 = new ContentInfo("image/jpeg");
-            var ci2 = new ContentInfo("image/png");
-            var ci3 = new ContentInfo(200);
-            var ci4 = new ContentInfo(400);
-            var ci5 = new ContentInfo("image/jpeg", 200);
-            Assert.Null(ci0.Type);
+            ResourceInfo ci0 = default;
+            var ci1 = new ResourceInfo("image/jpeg");
+            var ci2 = new ResourceInfo("image/png");
+            var ci3 = new ResourceInfo(200);
+            var ci4 = new ResourceInfo(400);
+            var ci5 = new ResourceInfo("image/jpeg", 200);
+            Assert.Null(ci0.MediaType);
             Assert.False(ci0.Length.HasValue);
-            Assert.Equal("image/jpeg", ci1.Type);
+            Assert.Equal("image/jpeg", ci1.MediaType);
             Assert.False(ci1.Length.HasValue);
-            Assert.Equal("image/png", ci2.Type);
+            Assert.Equal("image/png", ci2.MediaType);
             Assert.False(ci2.Length.HasValue);
-            Assert.Null(ci3.Type);
+            Assert.Null(ci3.MediaType);
             Assert.True(ci3.Length.HasValue);
             Assert.Equal(200, ci3.Length!.Value);
-            Assert.Null(ci4.Type);
+            Assert.Null(ci4.MediaType);
             Assert.True(ci4.Length.HasValue);
             Assert.Equal(400, ci4.Length!.Value);
-            Assert.Equal("image/jpeg", ci5.Type);
+            Assert.Equal("image/jpeg", ci5.MediaType);
             Assert.True(ci5.Length.HasValue);
             Assert.Equal(200, ci5.Length!.Value);
 
@@ -183,7 +183,8 @@ namespace NCoreUtils.Images
             Assert.Equal(ImageTypes.Png, ImageTypes.OfMediaType("image/png"));
             Assert.Equal(ImageTypes.Gif, ImageTypes.OfMediaType("image/gif"));
             Assert.Equal(ImageTypes.WebP, ImageTypes.OfMediaType("image/webp"));
-            Assert.Equal("unknown", ImageTypes.OfMediaType("application/pdf"));
+            Assert.Equal(ImageTypes.Pdf, ImageTypes.OfMediaType("application/pdf"));
+            Assert.Equal("unknown", ImageTypes.OfMediaType("application/octet-stream"));
         }
 
         [Fact]

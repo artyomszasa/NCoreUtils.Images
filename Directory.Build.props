@@ -1,9 +1,10 @@
 <Project>
   <PropertyGroup>
-    <Version>6.0.0-beta01</Version>
-    <LangVersion>10.0</LangVersion>
+    <Version>7.0.0-rc00</Version>
+    <LangVersion>11.0</LangVersion>
     <Nullable>enable</Nullable>
     <FxNugetVersion>6.0.0</FxNugetVersion>
+    <Fx7NugetVersion>7.0.0</Fx7NugetVersion>
     <Fx3NugetVersion>3.1.16</Fx3NugetVersion>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>

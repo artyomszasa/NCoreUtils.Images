@@ -8,7 +8,7 @@ namespace NCoreUtils.Images
     static class SpanBuilderExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryAppendOption(this ref SpanBuilder builder, ref bool first, string key, string? value)
+        public static bool TryAppendOption(this ref SpanBuilder builder, scoped ref bool first, string key, string? value)
         {
             if (!string.IsNullOrEmpty(value))
             {
@@ -28,7 +28,7 @@ namespace NCoreUtils.Images
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryAppendOption(this ref SpanBuilder builder, ref bool first, string key, int? value)
+        public static bool TryAppendOption(this ref SpanBuilder builder, scoped ref bool first, string key, int? value)
         {
             if (value.HasValue)
             {
@@ -48,7 +48,7 @@ namespace NCoreUtils.Images
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryAppendOption(this ref SpanBuilder builder, ref bool first, string key, bool? value)
+        public static bool TryAppendOption(this ref SpanBuilder builder, scoped ref bool first, string key, bool? value)
         {
             if (value.HasValue)
             {
@@ -68,7 +68,7 @@ namespace NCoreUtils.Images
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryAppendOption<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this ref SpanBuilder builder, ref bool first, string key, T? value)
+        public static bool TryAppendOption<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this ref SpanBuilder builder, scoped ref bool first, string key, T? value)
             where T : class
         {
             if (value is not null)
@@ -88,7 +88,7 @@ namespace NCoreUtils.Images
             return true;
         }
 
-        public static bool TryAppendFilters(this ref SpanBuilder builder, ref bool first, IEnumerable<IFilter> filters)
+        public static bool TryAppendFilters(this ref SpanBuilder builder, scoped ref bool first, IEnumerable<IFilter> filters)
         {
             foreach (var filter in filters)
             {

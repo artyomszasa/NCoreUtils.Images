@@ -1,32 +1,43 @@
 using System;
+using System.Runtime.CompilerServices;
 using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Internal
 {
     public class Blur : IFilter, IEmplaceable<Blur>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetEmplaceBufferSize() => 5 + 36 + 1;
+
         public double Sigma { get; }
 
         public Blur(double sigma = 1.0)
+            => Sigma = sigma;
+
+        int IFilter.GetEmplaceBufferSize() => GetEmplaceBufferSize();
+
+        bool IEmplaceable<Blur>.TryGetEmplaceBufferSize(out int minimumBufferSize)
         {
-            Sigma = sigma;
+            minimumBufferSize = GetEmplaceBufferSize();
+            return true;
         }
 
-        public override string ToString()
-        {
-            Span<char> buffer = stackalloc char[256];
-            var size = Emplace(buffer);
-            return buffer[..size].ToString();
-        }
-
+#if NET6_0_OR_GREATER
+        string IFormattable.ToString(string? format, System.IFormatProvider? formatProvider)
+            => ToString();
+#else
         public int Emplace(Span<char> span)
         {
             if (TryEmplace(span, out var used))
             {
                 return used;
             }
-            throw new ArgumentException("Insufficient buffer size.", nameof(span));
+            throw new InsufficientBufferSizeException(span);
         }
+#endif
+
+        public override string ToString()
+            => Emplacer.ToStringUsingArrayPool(this);
 
         public bool TryEmplace(Span<char> span, out int used)
         {

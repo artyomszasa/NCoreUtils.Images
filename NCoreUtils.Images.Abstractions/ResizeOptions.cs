@@ -104,26 +104,68 @@ namespace NCoreUtils.Images
             return false;
         }
 
-        public override string ToString()
+        internal int GetEmplaceBufferSize()
         {
-            if (TryToStringOnStack(out var result))
+            var size = 2;
+            if (!string.IsNullOrEmpty(ImageType))
             {
-                return result;
+                size += 2 + 9 + 3 + ImageType.Length;
             }
-            using var memoryBuffer = MemoryPool<char>.Shared.Rent(32 * 1024);
-            var buffer = memoryBuffer.Memory.Span;
-            var size = Emplace(buffer);
-            return buffer[..size].ToString();
+            if (Width.HasValue)
+            {
+                size += 2 + 5 + 3 + 21;
+            }
+            if (Height.HasValue)
+            {
+                size += 2 + 6 + 3 + 21;
+            }
+            if (!string.IsNullOrEmpty(ResizeMode))
+            {
+                size += 2 + 10 + 3 + ResizeMode.Length;
+            }
+            if (Quality.HasValue)
+            {
+                size += 2 + 7 + 3 + 21;
+            }
+            if (Optimize.HasValue)
+            {
+                size += 2 + 8 + 3 + 5;
+            }
+            if (WeightX.HasValue)
+            {
+                size += 2 + 7 + 3 + 21;
+            }
+            if (WeightY.HasValue)
+            {
+                size += 2 + 7 + 3 + 21;
+            }
+            foreach (var filter in Filters)
+            {
+                size += 2 + 6 + 3 + filter.GetEmplaceBufferSize();
+            }
+            return size;
         }
 
+        bool IEmplaceable<ResizeOptions>.TryGetEmplaceBufferSize(out int minimumBufferSize)
+        {
+            minimumBufferSize = GetEmplaceBufferSize();
+            return true;
+        }
+
+
+#if NET6_0_OR_GREATER
+        string IFormattable.ToString(string? format, System.IFormatProvider? formatProvider)
+            => ToString();
+#else
         public int Emplace(Span<char> span)
         {
             if (TryEmplace(span, out var used))
             {
                 return used;
             }
-            throw new ArgumentException("Insufficient buffer size.", nameof(span));
+            throw new InsufficientBufferSizeException(span);
         }
+#endif
 
         public bool TryEmplace(Span<char> span, out int used)
         {
@@ -147,5 +189,8 @@ namespace NCoreUtils.Images
             used = default;
             return false;
         }
+
+        public override string ToString()
+            => Emplacer.ToStringUsingArrayPool(this);
     }
 }

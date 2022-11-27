@@ -1,14 +1,10 @@
 using System.Numerics;
 
-namespace NCoreUtils.Images.ImageMagick
+namespace NCoreUtils.Images.ImageMagick;
+
+internal partial record struct BucketUsage(BigInteger Total, BigInteger Used);
+
+internal partial record struct BucketUsage
 {
-    internal struct BucketUsage
-    {
-        public BigInteger Total { get; set; }
-
-        public BigInteger Used { get; set; }
-
-        public UsageData Snapshot() => new(Total, Used);
-
-    }
+    public UsageData Snapshot() => new(Total, Used);
 }

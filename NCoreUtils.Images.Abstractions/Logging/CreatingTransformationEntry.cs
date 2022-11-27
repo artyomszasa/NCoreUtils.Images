@@ -14,35 +14,18 @@ namespace NCoreUtils.Images.Logging
         public ResizeOptions Options { get; }
 
         public CreatingTransformationEntry(ResizeOptions options)
+            => Options = options ?? throw new ArgumentNullException(nameof(options));
+
+        bool IEmplaceable<CreatingTransformationEntry>.TryGetEmplaceBufferSize(out int minimumBufferSize)
         {
-            Options = options;
+            minimumBufferSize = 38 + Options.GetEmplaceBufferSize();
+            return true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryToStringOnStack([NotNullWhen(true)] out string? result)
-        {
-            Span<char> buffer = stackalloc char[4 * 1024];
-            if (TryEmplace(buffer, out var size))
-            {
-                result = buffer[..size].ToString();
-                return true;
-            }
-            result = default;
-            return false;
-        }
-
-        public override string ToString()
-        {
-            if (TryToStringOnStack(out var result))
-            {
-                return result;
-            }
-            using var memoryBuffer = MemoryPool<char>.Shared.Rent(32 * 1024);
-            var buffer = memoryBuffer.Memory.Span;
-            var size = Emplace(buffer);
-            return buffer[..size].ToString();
-        }
-
+#if NET6_0_OR_GREATER
+        string IFormattable.ToString(string? format, System.IFormatProvider? formatProvider)
+            => ToString();
+#else
         public int Emplace(Span<char> span)
         {
             if (TryEmplace(span, out var used))
@@ -51,6 +34,7 @@ namespace NCoreUtils.Images.Logging
             }
             throw new ArgumentException("Insufficient buffer size.", nameof(span));
         }
+#endif
 
         public bool TryEmplace(Span<char> span, out int used)
         {
@@ -65,5 +49,8 @@ namespace NCoreUtils.Images.Logging
             used = default;
             return false;
         }
+
+        public override string ToString()
+            => Emplacer.ToStringUsingArrayPool(this);
     }
 }

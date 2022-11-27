@@ -1,11 +1,10 @@
-namespace NCoreUtils.Images
+namespace NCoreUtils.Images;
+
+public interface IImageResizerOptions
 {
-    public interface IImageResizerOptions
-    {
-        long? MemoryLimit { get; }
+    long? MemoryLimit { get; }
 
-        int Quality(string imageType);
+    int Quality(string imageType);
 
-        bool Optimize(string imageType);
-    }
+    bool Optimize(string imageType);
 }

@@ -9,7 +9,7 @@ namespace NCoreUtils.Images
 {
     public class DebugImageData
     {
-        public sealed class DebugImageSource : IImageSource
+        public sealed class DebugImageSource : IReadableResource
         {
             private readonly DebugImageData _data;
 
@@ -19,13 +19,16 @@ namespace NCoreUtils.Images
 
             public IStreamProducer CreateProducer()
                 => StreamProducer.Create((stream, cancellationToken) => SerializeAsync(_data, stream, cancellationToken));
+
+            public ValueTask<ResourceInfo> GetInfoAsync(CancellationToken cancellationToken = default)
+                => default;
         }
 
-        public sealed class DebugImageDestination : IImageDestination
+        public sealed class DebugImageDestination : IWritableResource
         {
             public DebugImageData? Data { get; private set; }
 
-            public IStreamConsumer CreateConsumer(ContentInfo contentInfo)
+            public IStreamConsumer CreateConsumer(ResourceInfo contentInfo)
                 => StreamConsumer.Create(DeserializeAsync).Bind(data => Data = data);
         }
 

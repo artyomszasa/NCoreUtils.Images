@@ -1,7 +1,6 @@
-namespace NCoreUtils.Images.Internal
+namespace NCoreUtils.Images.Internal;
+
+public interface IResizerFactory
 {
-    public interface IResizerFactory
-    {
-        IResizer CreateResizer(IImage image, ResizeOptions options);
-    }
+    IResizer CreateResizer(IImage image, ResizeOptions options);
 }
