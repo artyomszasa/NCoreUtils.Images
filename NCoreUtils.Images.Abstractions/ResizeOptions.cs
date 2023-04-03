@@ -8,7 +8,7 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images
 {
-    public class ResizeOptions : IEmplaceable<ResizeOptions>
+    public class ResizeOptions : ISpanExactEmplaceable
     {
         /// <summary>
         /// Desired output image type. Defaults to the input image type when not set.
@@ -91,19 +91,6 @@ namespace NCoreUtils.Images
             : this(imageType, width, height, resizeMode, quality, optimize, weightX, weightY, (IReadOnlyList<IFilter>)(filters.Length == 0 ? Array.Empty<IFilter>() : filters))
         { }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryToStringOnStack([NotNullWhen(true)] out string? result)
-        {
-            Span<char> buffer = stackalloc char[4 * 1024];
-            if (TryEmplace(buffer, out var size))
-            {
-                result = buffer[..size].ToString();
-                return true;
-            }
-            result = default;
-            return false;
-        }
-
         internal int GetEmplaceBufferSize()
         {
             var size = 2;
@@ -146,7 +133,10 @@ namespace NCoreUtils.Images
             return size;
         }
 
-        bool IEmplaceable<ResizeOptions>.TryGetEmplaceBufferSize(out int minimumBufferSize)
+        int ISpanExactEmplaceable.GetEmplaceBufferSize()
+            => GetEmplaceBufferSize();
+
+        bool ISpanEmplaceable.TryGetEmplaceBufferSize(out int minimumBufferSize)
         {
             minimumBufferSize = GetEmplaceBufferSize();
             return true;
@@ -157,6 +147,9 @@ namespace NCoreUtils.Images
         string IFormattable.ToString(string? format, System.IFormatProvider? formatProvider)
             => ToString();
 #else
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider)
+            => TryEmplace(destination, out charsWritten);
+
         public int Emplace(Span<char> span)
         {
             if (TryEmplace(span, out var used))

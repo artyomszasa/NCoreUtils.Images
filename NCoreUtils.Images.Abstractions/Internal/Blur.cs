@@ -4,7 +4,7 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Internal
 {
-    public class Blur : IFilter, IEmplaceable<Blur>
+    public class Blur : IFilter, ISpanExactEmplaceable
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetEmplaceBufferSize() => 5 + 36 + 1;
@@ -16,7 +16,9 @@ namespace NCoreUtils.Images.Internal
 
         int IFilter.GetEmplaceBufferSize() => GetEmplaceBufferSize();
 
-        bool IEmplaceable<Blur>.TryGetEmplaceBufferSize(out int minimumBufferSize)
+        int ISpanExactEmplaceable.GetEmplaceBufferSize() => GetEmplaceBufferSize();
+
+        bool ISpanEmplaceable.TryGetEmplaceBufferSize(out int minimumBufferSize)
         {
             minimumBufferSize = GetEmplaceBufferSize();
             return true;
@@ -26,6 +28,9 @@ namespace NCoreUtils.Images.Internal
         string IFormattable.ToString(string? format, System.IFormatProvider? formatProvider)
             => ToString();
 #else
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider)
+            => TryEmplace(destination, out charsWritten);
+
         public int Emplace(Span<char> span)
         {
             if (TryEmplace(span, out var used))
