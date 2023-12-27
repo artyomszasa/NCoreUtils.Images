@@ -11,17 +11,21 @@ namespace NCoreUtils.Images
 {
     public class PrimitiveTests
     {
+#if !NET8_0_OR_GREATER
         [Serializable]
+#endif
         private class TestException : Exception
         {
+#if !NET8_0_OR_GREATER
             protected TestException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             { }
+#endif
 
             public TestException() : base() { }
         }
 
-#pragma warning disable SYSLIB0011
+#if !NET8_0_OR_GREATER
         private static object Reserialize<T>(T value)
         {
             var formatter = new BinaryFormatter();
@@ -30,7 +34,7 @@ namespace NCoreUtils.Images
             buffer.Seek(0, SeekOrigin.Begin);
             return formatter.Deserialize(buffer);
         }
-#pragma warning restore SYSLIB0011
+#endif
 
         [Fact]
         [MethodImpl(MethodImplOptions.NoInlining|MethodImplOptions.NoOptimization)]
@@ -298,6 +302,8 @@ namespace NCoreUtils.Images
             Assert.Equal(ErrorCodes.UnsupportedResizeMode, exn6.ErrorCode);
             Assert.Equal(ErrorCodes.UnsupportedResizeMode, exn7.ErrorCode);
 
+
+#if !NET8_0_OR_GREATER
             var e0 = Assert.IsType<InternalImageException>(Reserialize(exn0));
             Assert.Equal("internal_code", e0.InternalCode);
             Assert.Equal(ErrorCodes.InternalError, e0.ErrorCode);
@@ -351,6 +357,7 @@ namespace NCoreUtils.Images
             Assert.Equal("xxx", e7.Message);
             Assert.NotNull(e7.InnerException);
             Assert.IsType<TestException>(e7.InnerException);
+#endif
         }
 
         [Fact]

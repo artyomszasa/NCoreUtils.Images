@@ -2,28 +2,24 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.Images\NCoreUtils.Images.csproj" />
-    <ProjectReference Include="..\NCoreUtils.Images.AzureBlobStorage\NCoreUtils.Images.AzureBlobStorage.csproj" />
-    <ProjectReference Include="..\NCoreUtils.Images.FileSystem\NCoreUtils.Images.FileSystem.csproj" />
-    <ProjectReference Include="..\NCoreUtils.Images.GoogleCloudStorage\NCoreUtils.Images.GoogleCloudStorage.csproj" />
     <ProjectReference Include="..\NCoreUtils.Images.ImageMagick\NCoreUtils.Images.ImageMagick.csproj" />
     <TrimmerRootAssembly Include="NCoreUtils.Images" />
-    <TrimmerRootAssembly Include="NCoreUtils.Images.AzureBlobStorage" />
-    <TrimmerRootAssembly Include="NCoreUtils.Images.FileSystem" />
-    <TrimmerRootAssembly Include="NCoreUtils.Images.GoogleCloudStorage" />
     <TrimmerRootAssembly Include="NCoreUtils.Images.ImageMagick" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Use a RID of your choice. -->
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Prevent warnings from unused code in dependencies -->
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <TrimMode>full</TrimMode>
+    <PublishAot>true</PublishAot>
     <IsPackable>false</IsPackable>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
 </Project>

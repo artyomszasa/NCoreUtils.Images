@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net6.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net7.0;net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Images</RootNamespace>
     <!-- NuGet -->
     <PackageId>NCoreUtils.Images</PackageId>
@@ -37,8 +37,12 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(Fx7NugetVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(Fx7NugetVersion)" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(Fx8NugetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(Fx8NugetVersion)" />
+  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.IO" Version="7.0.0" />
+    <PackageReference Include="NCoreUtils.IO" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
     <Compile Remove="CodeAnalysis\**" />

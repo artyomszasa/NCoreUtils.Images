@@ -6,27 +6,23 @@ namespace NCoreUtils.Images;
 /// <summary>
 /// Represents information returned by <see cref="IImageAnalyzer" />.
 /// </summary>
-public class ImageInfo
+public class ImageInfo(
+    int width,
+    int height,
+    int xResolution,
+    int yResolution,
+    IReadOnlyDictionary<string, string> iptc,
+    IReadOnlyDictionary<string, string> exif)
 {
-    public int Width { get; }
+    public int Width { get; } = width;
 
-    public int Height { get; }
+    public int Height { get; } = height;
 
-    public int XResolution { get; }
+    public int XResolution { get; } = xResolution;
 
-    public int YResolution { get; }
+    public int YResolution { get; } = yResolution;
 
-    public IReadOnlyDictionary<string, string> Iptc { get; }
+    public IReadOnlyDictionary<string, string> Iptc { get; } = iptc ?? throw new ArgumentNullException(nameof(iptc));
 
-    public IReadOnlyDictionary<string, string> Exif { get; }
-
-    public ImageInfo(int width, int height, int xResolution, int yResolution, IReadOnlyDictionary<string, string> iptc, IReadOnlyDictionary<string, string> exif)
-    {
-        Width = width;
-        Height = height;
-        XResolution = xResolution;
-        YResolution = yResolution;
-        Iptc = iptc ?? throw new ArgumentNullException(nameof(iptc));
-        Exif = exif ?? throw new ArgumentNullException(nameof(exif));
-    }
+    public IReadOnlyDictionary<string, string> Exif { get; } = exif ?? throw new ArgumentNullException(nameof(exif));
 }

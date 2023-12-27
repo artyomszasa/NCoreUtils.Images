@@ -3,15 +3,12 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Logging;
 
-public struct CreatingTransformationEntry : ISpanExactEmplaceable
+public readonly struct CreatingTransformationEntry(ResizeOptions options) : ISpanExactEmplaceable
 {
     public static Func<CreatingTransformationEntry, Exception?, string> Formatter { get; } =
         (entry, _) => entry.ToString();
 
-    public ResizeOptions Options { get; }
-
-    public CreatingTransformationEntry(ResizeOptions options)
-        => Options = options ?? throw new ArgumentNullException(nameof(options));
+    public ResizeOptions Options { get; } = options ?? throw new ArgumentNullException(nameof(options));
 
     private int GetEmplaceBufferSize()
         => 38 + Options.GetEmplaceBufferSize();
@@ -46,7 +43,7 @@ public struct CreatingTransformationEntry : ISpanExactEmplaceable
     {
         var builder = new SpanBuilder(span);
         if (builder.TryAppend("Creating transformation with options ")
-            && builder.TryAppend(Options)
+            && builder.TryAppend(Options, ResizeOptions.Emplacer)
             && builder.TryAppend('.'))
         {
             used = builder.Length;

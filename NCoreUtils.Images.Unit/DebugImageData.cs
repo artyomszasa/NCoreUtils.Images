@@ -1,67 +1,64 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using NCoreUtils.IO;
 
-namespace NCoreUtils.Images
+namespace NCoreUtils.Images;
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(DebugImageData))]
+internal partial class DebugImageSerializerContext : JsonSerializerContext { }
+
+public class DebugImageData
 {
-    public class DebugImageData
+    public sealed class DebugImageSource(DebugImageData data) : IReadableResource
     {
-        public sealed class DebugImageSource : IReadableResource
-        {
-            private readonly DebugImageData _data;
+        private readonly DebugImageData _data = data ?? throw new ArgumentNullException(nameof(data));
 
-            public bool Reusable => true;
+        public bool Reusable => true;
 
-            public DebugImageSource(DebugImageData data) => _data = data ?? throw new ArgumentNullException(nameof(data));
+        public IStreamProducer CreateProducer()
+            => StreamProducer.Create((stream, cancellationToken) => SerializeAsync(_data, stream, cancellationToken));
 
-            public IStreamProducer CreateProducer()
-                => StreamProducer.Create((stream, cancellationToken) => SerializeAsync(_data, stream, cancellationToken));
+        public ValueTask<ResourceInfo> GetInfoAsync(CancellationToken cancellationToken = default)
+            => default;
+    }
 
-            public ValueTask<ResourceInfo> GetInfoAsync(CancellationToken cancellationToken = default)
-                => default;
-        }
+    public sealed class DebugImageDestination : IWritableResource
+    {
+        public DebugImageData? Data { get; private set; }
 
-        public sealed class DebugImageDestination : IWritableResource
-        {
-            public DebugImageData? Data { get; private set; }
+        public IStreamConsumer CreateConsumer(ResourceInfo contentInfo)
+            => StreamConsumer.Create(DeserializeAsync).Bind(data => Data = data);
+    }
 
-            public IStreamConsumer CreateConsumer(ResourceInfo contentInfo)
-                => StreamConsumer.Create(DeserializeAsync).Bind(data => Data = data);
-        }
+    public static ValueTask SerializeAsync(DebugImageData data, Stream destination, CancellationToken cancellationToken)
+        => new(JsonSerializer.SerializeAsync(destination, data, DebugImageSerializerContext.Default.DebugImageData, cancellationToken));
 
-        private static readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
+    public static ValueTask<DebugImageData?> DeserializeAsync(Stream source, CancellationToken cancellationToken)
+        => JsonSerializer.DeserializeAsync(source, DebugImageSerializerContext.Default.DebugImageData, cancellationToken);
 
-        public static ValueTask SerializeAsync(DebugImageData data, Stream destination, CancellationToken cancellationToken)
-            => new(JsonSerializer.SerializeAsync(destination, data, _jsonOptions, cancellationToken));
+    public static DebugImageSource CreateSource(DebugImageData data)
+        => new(data);
 
-        public static ValueTask<DebugImageData?> DeserializeAsync(Stream source, CancellationToken cancellationToken)
-            => JsonSerializer.DeserializeAsync<DebugImageData>(source, _jsonOptions, cancellationToken);
+    public static DebugImageDestination CreateDestination()
+        => new();
 
-        public static DebugImageSource CreateSource(DebugImageData data)
-            => new(data);
+    public int Width { get; set; }
 
-        public static DebugImageDestination CreateDestination()
-            => new();
+    public int Height { get; set; }
 
-        public int Width { get; set; }
+    public string ImageType { get; set; } = string.Empty;
 
-        public int Height { get; set; }
+    public DebugImageData() { }
 
-        public string ImageType { get; set; } = string.Empty;
-
-        public DebugImageData() { }
-
-        public DebugImageData(int width, int height, string imageType)
-        {
-            Width = width;
-            Height = height;
-            ImageType = imageType;
-        }
+    public DebugImageData(int width, int height, string imageType)
+    {
+        Width = width;
+        Height = height;
+        ImageType = imageType;
     }
 }

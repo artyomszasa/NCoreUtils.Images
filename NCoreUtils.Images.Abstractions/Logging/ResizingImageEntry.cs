@@ -3,7 +3,7 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Logging;
 
-public struct ResizingImageEntry : ISpanExactEmplaceable
+public readonly struct ResizingImageEntry : ISpanExactEmplaceable
 {
     public static Func<ResizingImageEntry, Exception?, string> Formatter { get; } =
         (entry, _) => entry.ToString();
@@ -73,7 +73,7 @@ public struct ResizingImageEntry : ISpanExactEmplaceable
         if (builder.TryAppend(", Quality = ")
             && builder.TryAppend(Quality)
             && builder.TryAppend(", Optimize = ")
-            && builder.TryAppend(Optimize)
+            && SpanBuilderExtensions.TryAppend(ref builder, Optimize)
             && builder.TryAppend("]."))
         {
             used = builder.Length;

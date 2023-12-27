@@ -3,15 +3,12 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Logging;
 
-public struct InitializingDestinationEntry : ISpanExactEmplaceable
+public readonly struct InitializingDestinationEntry(string contentType) : ISpanExactEmplaceable
 {
     public static Func<InitializingDestinationEntry, Exception?, string> Formatter { get; } =
         (entry, _) => entry.ToString();
 
-    public string ContentType { get; }
-
-    public InitializingDestinationEntry(string contentType)
-        => ContentType = contentType ?? string.Empty;
+    public string ContentType { get; } = contentType ?? string.Empty;
 
     private int GetEmplaceBufferSize()
         => 50 + ContentType.Length;

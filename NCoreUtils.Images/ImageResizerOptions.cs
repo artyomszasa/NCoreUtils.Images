@@ -8,9 +8,9 @@ public class ImageResizerOptions : IImageResizerOptions
 
     public long? MemoryLimit { get; set; }
 
-    public Dictionary<string, int> Quality { get; } = new();
+    public Dictionary<string, int> Quality { get; } = [];
 
-    public Dictionary<string, bool> Optimize { get; } = new();
+    public Dictionary<string, bool> Optimize { get; } = [];
 
     int IImageResizerOptions.Quality(string imageType)
         => Quality.TryGetValue(imageType, out var i) || Quality.TryGetValue("Default", out i)

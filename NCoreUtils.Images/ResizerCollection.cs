@@ -19,7 +19,7 @@ public class ResizerCollection : IReadOnlyDictionary<string, IResizerFactory>
 
     public ResizerCollection(IReadOnlyDictionary<string, IResizerFactory> factories)
     {
-        _factories = new Dictionary<string, IResizerFactory>();
+        _factories = [];
         foreach (var kv in factories)
         {
             _factories.Add(kv.Key, kv.Value);

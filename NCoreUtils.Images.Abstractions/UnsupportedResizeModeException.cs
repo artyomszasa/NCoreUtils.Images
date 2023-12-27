@@ -6,7 +6,9 @@ namespace NCoreUtils.Images;
 /// <summary>
 /// Thrown if the requested sizing is not supported.
 /// </summary>
+#if !NET8_0_OR_GREATER
 [Serializable]
+#endif
 public class UnsupportedResizeModeException : ImageException
 {
     static int? GetNInt(SerializationInfo info, string key)
@@ -21,6 +23,7 @@ public class UnsupportedResizeModeException : ImageException
 
     public int? Height { get; }
 
+#if !NET8_0_OR_GREATER
     protected UnsupportedResizeModeException(SerializationInfo info, StreamingContext context)
         : base(info, context)
     {
@@ -28,6 +31,7 @@ public class UnsupportedResizeModeException : ImageException
         Width = GetNInt(info, nameof(Width));
         Height = GetNInt(info, nameof(Height));
     }
+#endif
 
     public UnsupportedResizeModeException(string resizeMode, int? width, int? height, string description)
         : base(ErrorCodes.UnsupportedResizeMode, description)
@@ -45,6 +49,7 @@ public class UnsupportedResizeModeException : ImageException
         Height = height;
     }
 
+#if !NET8_0_OR_GREATER
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         base.GetObjectData(info, context);
@@ -52,4 +57,5 @@ public class UnsupportedResizeModeException : ImageException
         info.AddValue(nameof(Width), Width ?? -1);
         info.AddValue(nameof(Height), Height ?? -1);
     }
+#endif
 }

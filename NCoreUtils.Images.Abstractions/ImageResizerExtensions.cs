@@ -13,19 +13,13 @@ namespace NCoreUtils.Images;
 [ExcludeFromCodeCoverage]
 public static class ImageResizerExtensions
 {
-    private sealed class StreamSource : IReadableResource, IAsyncDisposable, IDisposable
+    private sealed class StreamSource(Stream stream, bool leaveOpen) : IReadableResource, IAsyncDisposable, IDisposable
     {
-        private Stream Stream { get; }
+        private Stream Stream { get; } = stream ?? throw new ArgumentNullException(nameof(stream));
 
-        private bool LeaveOpen { get; }
+        private bool LeaveOpen { get; } = leaveOpen;
 
         public bool Reusable => Stream.CanSeek;
-
-        public StreamSource(Stream stream, bool leaveOpen)
-        {
-            Stream = stream ?? throw new ArgumentNullException(nameof(stream));
-            LeaveOpen = leaveOpen;
-        }
 
         public IStreamProducer CreateProducer()
             => StreamProducer.Create((output, cancellationToken) =>
@@ -67,19 +61,13 @@ public static class ImageResizerExtensions
         }
     }
 
-    private sealed class StreamDestination : IWritableResource, IAsyncDisposable, IDisposable
+    private sealed class StreamDestination(Stream stream, bool leaveOpen) : IWritableResource, IAsyncDisposable, IDisposable
     {
-        private Stream Stream { get; }
+        private Stream Stream { get; } = stream ?? throw new ArgumentNullException(nameof(stream));
 
-        private bool LeaveOpen { get; }
+        private bool LeaveOpen { get; } = leaveOpen;
 
         public bool Reusable => false;
-
-        public StreamDestination(Stream stream, bool leaveOpen)
-        {
-            Stream = stream ?? throw new ArgumentNullException(nameof(stream));
-            LeaveOpen = leaveOpen;
-        }
 
         public IStreamConsumer CreateConsumer(ResourceInfo resourceInfo)
             => StreamConsumer.ToStream(Stream);
@@ -102,14 +90,11 @@ public static class ImageResizerExtensions
         }
     }
 
-    private sealed class ProducerSource : IReadableResource, IAsyncDisposable
+    private sealed class ProducerSource(IStreamProducer producer) : IReadableResource, IAsyncDisposable
     {
-        private IStreamProducer Producer { get; }
+        private IStreamProducer Producer { get; } = producer ?? throw new ArgumentNullException(nameof(producer));
 
         public bool Reusable => false;
-
-        public ProducerSource(IStreamProducer producer)
-            => Producer = producer ?? throw new ArgumentNullException(nameof(producer));
 
         public IStreamProducer CreateProducer()
             => Producer;
@@ -121,12 +106,9 @@ public static class ImageResizerExtensions
             => default;
     }
 
-    private sealed class ConsumerDestination : IWritableResource, IAsyncDisposable
+    private sealed class ConsumerDestination(IStreamConsumer consumer) : IWritableResource, IAsyncDisposable
     {
-        private IStreamConsumer Consumer { get; }
-
-        public ConsumerDestination(IStreamConsumer consumer)
-            => Consumer = consumer ?? throw new ArgumentNullException(nameof(consumer));
+        private IStreamConsumer Consumer { get; } = consumer ?? throw new ArgumentNullException(nameof(consumer));
 
         public IStreamConsumer CreateConsumer(ResourceInfo resourceInfo)
             => Consumer;
