@@ -3,26 +3,18 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Images.Logging;
 
-public readonly struct ResizingImageEntry : ISpanExactEmplaceable
+public readonly struct ResizingImageEntry(string imageType, bool isExplicit, int quality, bool optimize) : ISpanExactEmplaceable
 {
     public static Func<ResizingImageEntry, Exception?, string> Formatter { get; } =
         (entry, _) => entry.ToString();
 
-    public string ImageType { get; }
+    public string ImageType { get; } = imageType;
 
-    public bool IsExplicit { get; }
+    public bool IsExplicit { get; } = isExplicit;
 
-    public int Quality { get; }
+    public int Quality { get; } = quality;
 
-    public bool Optimize { get; }
-
-    public ResizingImageEntry(string imageType, bool isExplicit, int quality, bool optimize)
-    {
-        ImageType = imageType;
-        IsExplicit = isExplicit;
-        Quality = quality;
-        Optimize = optimize;
-    }
+    public bool Optimize { get; } = optimize;
 
     private int GetEmplaceBufferSize()
     {
