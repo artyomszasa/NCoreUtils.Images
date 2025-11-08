@@ -1,4 +1,5 @@
 using ImageMagick;
+using LogEvents = ImageMagick.LogEventTypes;
 
 namespace NCoreUtils.Images.ImageMagick;
 

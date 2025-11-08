@@ -24,15 +24,15 @@ public sealed class Image : IImage, IDisposable
     private static bool SupportsMultiImageOutput(string imageType)
         => MultiImageTypes.Contains(imageType);
 
-    private static IReadOnlyList<int> IcoSizes { get; } = new[]
+    private static IReadOnlyList<uint> IcoSizes { get; } = new[]
     {
-        16,
-        32,
-        48,
-        64,
-        128,
-        256,
-        512
+        16u,
+        32u,
+        48u,
+        64u,
+        128u,
+        256u,
+        512u
     };
 
 
@@ -44,7 +44,7 @@ public sealed class Image : IImage, IDisposable
         bool optimize,
         CancellationToken cancellationToken)
     {
-        source.Quality = quality;
+        source.Quality = (uint)quality;
         if (optimize)
         {
             // strips all meta but the color profile.
@@ -84,7 +84,7 @@ public sealed class Image : IImage, IDisposable
     {
         foreach (var source in images)
         {
-            source.Quality = quality;
+            source.Quality = (uint)quality;
             if (optimize)
             {
                 // strips all meta but the color profile.
@@ -219,7 +219,7 @@ public sealed class Image : IImage, IDisposable
         {
             if (waterMark.X.HasValue && waterMark.Y.HasValue)
             {
-                await waterMarkImage.ResizeAsync(new Size(waterMark.X.Value, waterMark.Y.Value), cancellationToken);
+                await waterMarkImage.ResizeAsync(new Size((uint)waterMark.X.Value, (uint)waterMark.Y.Value), cancellationToken);
             }
             var gravity = waterMark.Gravity switch
             {
@@ -269,7 +269,7 @@ public sealed class Image : IImage, IDisposable
         {
             img.Crop(rect.ToMagickGeometry());
         }
-        _native.RePage();
+        _native.ResetPage();
         return default;
     }
 
@@ -344,7 +344,7 @@ public sealed class Image : IImage, IDisposable
             xResolution = 0;
             yResolution = 0;
         }
-        return new ValueTask<ImageInfo>(new ImageInfo(Size.Width, Size.Height, xResolution, yResolution, iptc, exif));
+        return new ValueTask<ImageInfo>(new ImageInfo((int)Size.Width, (int)Size.Height, xResolution, yResolution, iptc, exif));
     }
 
     public ValueTask NormalizeAsync(CancellationToken cancellationToken = default)

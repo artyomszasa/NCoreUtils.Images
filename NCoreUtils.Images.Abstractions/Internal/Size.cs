@@ -1,3 +1,3 @@
 namespace NCoreUtils.Images.Internal;
 
-public readonly record struct Size(int Width, int Height);
+public readonly record struct Size(uint Width, uint Height);

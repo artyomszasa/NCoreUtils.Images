@@ -5,17 +5,11 @@ namespace NCoreUtils.Images.Internal;
 
 public class InboxResizerFactory : IResizerFactory
 {
-    private sealed class InboxResize : IResizer
+    private sealed class InboxResize(Rectangle rect, Size box) : IResizer
     {
-        private Rectangle Rect { get; }
+        private Rectangle Rect { get; } = rect;
 
-        private Size Box { get; }
-
-        public InboxResize(Rectangle rect, Size box)
-        {
-            Rect = rect;
-            Box = box;
-        }
+        private Size Box { get; } = box;
 
         public async ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
         {
@@ -39,29 +33,29 @@ public class InboxResizerFactory : IResizerFactory
         if (resizeWidthRatio < resizeHeightRatio)
         {
             // maximize width in box
-            var inputHeight = (int)(boxHeight / boxWidth * sourceWidth);
+            var inputHeight = (uint)(boxHeight / boxWidth * sourceWidth);
             var margin = (source.Height - inputHeight) / 2;
             if (weightY.HasValue)
             {
                 var diff = weightY.Value - sourceHeight / 2.0;
                 var normalized = diff / (sourceHeight / 2.0);
                 var mul = 1.0 + normalized;
-                margin = (int)(margin * mul);
+                margin = (uint)(margin * mul);
             }
-            return new Rectangle(0, margin, source.Width, inputHeight);
+            return new Rectangle(0, (int)margin, source.Width, inputHeight);
         }
         else
         {
-            var inputWidth = (int)(boxWidth / boxHeight * sourceHeight);
+            var inputWidth = (uint)(boxWidth / boxHeight * sourceHeight);
             var margin = (source.Width - inputWidth) / 2;
             if (weightX.HasValue)
             {
                 var diff = weightX.Value - sourceWidth / 2.0;
                 var normalized = diff / (sourceWidth / 2.0);
                 var mul = 1.0 + normalized;
-                margin = (int)(margin * mul);
+                margin = (uint)(margin * mul);
             }
-            return new Rectangle(margin, 0, inputWidth, source.Height);
+            return new Rectangle((int)margin, 0, inputWidth, source.Height);
         }
     }
 
@@ -78,7 +72,7 @@ public class InboxResizerFactory : IResizerFactory
                 "Exact image dimensions must be specified when using inbox resizing."
             );
         }
-        var box = new Size(options.Width.Value, options.Height.Value);
+        var box = new Size((uint)options.Width.Value, (uint)options.Height.Value);
         var rect = CalculateRect(options.WeightX, options.WeightY, image.Size, box);
         return new InboxResize(rect, box);
     }

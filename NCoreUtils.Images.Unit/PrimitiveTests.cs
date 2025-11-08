@@ -262,13 +262,13 @@ namespace NCoreUtils.Images
 
             Assert.Equal(200, r1.X);
             Assert.Equal(200, r1.Y);
-            Assert.Equal(400, r1.Width);
-            Assert.Equal(400, r1.Height);
+            Assert.Equal(400u, r1.Width);
+            Assert.Equal(400u, r1.Height);
 
             Assert.Equal(200, r2.X);
             Assert.Equal(200, r2.Y);
-            Assert.Equal(400, r2.Width);
-            Assert.Equal(400, r2.Height);
+            Assert.Equal(400u, r2.Width);
+            Assert.Equal(400u, r2.Height);
 
             Assert.True(r0 != r1);
             Assert.True(r1 == r2);

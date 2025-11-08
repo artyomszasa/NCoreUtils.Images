@@ -36,8 +36,8 @@ public sealed class DebugImage : IImage
 
     public ValueTask<ImageInfo> GetImageInfoAsync(CancellationToken cancellationToken)
         => new(new ImageInfo(
-            Size.Width,
-            Size.Height,
+            (int)Size.Width,
+            (int)Size.Height,
             96,
             96,
             new Dictionary<string, string>(),
@@ -54,5 +54,5 @@ public sealed class DebugImage : IImage
     }
 
     public ValueTask WriteToAsync(Stream stream, string imageType, int quality = 85, bool optimize = true, CancellationToken cancellationToken = default)
-        => DebugImageData.SerializeAsync(new DebugImageData(Size.Width, Size.Height, imageType), stream, cancellationToken);
+        => DebugImageData.SerializeAsync(new DebugImageData((int)Size.Width, (int)Size.Height, imageType), stream, cancellationToken);
 }

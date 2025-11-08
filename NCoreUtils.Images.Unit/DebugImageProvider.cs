@@ -12,6 +12,6 @@ public sealed class DebugImageProvider : IImageProvider
     public async ValueTask<IImage> FromStreamAsync(Stream source, CancellationToken cancellationToken = default)
     {
         var data = await DebugImageData.DeserializeAsync(source, cancellationToken);
-        return new DebugImage(new Size(data!.Width, data!.Height), data!.ImageType);
+        return new DebugImage(new Size((uint)data!.Width, (uint)data!.Height), data!.ImageType);
     }
 }

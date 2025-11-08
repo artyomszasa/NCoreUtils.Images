@@ -12,6 +12,7 @@ using ImageMagick;
 using ImageMagick.Configuration;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Images.Internal;
+using LogEvents = ImageMagick.LogEventTypes;
 
 namespace NCoreUtils.Images.ImageMagick;
 

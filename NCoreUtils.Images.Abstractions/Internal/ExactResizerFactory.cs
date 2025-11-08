@@ -6,12 +6,9 @@ namespace NCoreUtils.Images.Internal;
 
 public class ExactResizerFactory : IResizerFactory
 {
-    private sealed class ExactResizer : IResizer
+    private sealed class ExactResizer(Size size) : IResizer
     {
-        readonly Size _size;
-
-        public ExactResizer(Size size)
-            => _size = size;
+        readonly Size _size = size;
 
         public ValueTask ResizeAsync(IImage image, CancellationToken cancellationToken = default)
             => image.ResizeAsync(_size, cancellationToken);
@@ -24,29 +21,29 @@ public class ExactResizerFactory : IResizerFactory
     public IResizer CreateResizer(IImage image, ResizeOptions options)
     {
         Size size;
-        if (options.Width.HasValue)
+        if (options.Width is int width)
         {
-            if (options.Height.HasValue)
+            if (options.Height is int height)
             {
-                size = new Size(options.Width.Value, options.Height.Value);
+                size = new Size((uint)width, (uint)height);
             }
             else
             {
                 var imageSize = image.Size;
                 size = new Size(
-                    options.Width.Value,
-                    (int)((double)imageSize.Height / imageSize.Width * options.Width.Value)
+                    (uint)width,
+                    (uint)((double)imageSize.Height / imageSize.Width * width)
                 );
             }
         }
         else
         {
-            if (options.Height.HasValue)
+            if (options.Height is int height)
             {
                 var imageSize = image.Size;
                 size = new Size(
-                    (int)((double)imageSize.Width / imageSize.Height * options.Height.Value),
-                    options.Height.Value
+                    (uint)((double)imageSize.Width / imageSize.Height * height),
+                    (uint)height
                 );
             }
             else

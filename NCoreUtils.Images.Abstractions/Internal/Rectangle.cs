@@ -18,19 +18,19 @@ public readonly partial record struct Rectangle
         get => Point.Y;
     }
 
-    public int Width
+    public uint Width
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Size.Width;
     }
 
-    public int Height
+    public uint Height
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Size.Height;
     }
 
-    public Rectangle(int x, int y, int width, int height)
+    public Rectangle(int x, int y, uint width, uint height)
         : this(new Point(x, y), new Size(width, height))
     { }
 }
