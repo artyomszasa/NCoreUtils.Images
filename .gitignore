@@ -2,6 +2,8 @@
 .vscode
 .ionide
 
+*.csproj.lscache
+
 NCoreUtils*/obj
 NCoreUtils*/bin
 NCoreUtils*Unit/report

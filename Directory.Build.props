@@ -1,12 +1,12 @@
 <Project>
   <PropertyGroup>
-    <Version>8.0.1</Version>
-    <LangVersion>12.0</LangVersion>
+    <Version>10.0.0-rc02</Version>
+    <LangVersion>14.0</LangVersion>
     <Nullable>enable</Nullable>
     <FxNugetVersion>6.0.0</FxNugetVersion>
-    <Fx7NugetVersion>7.0.0</Fx7NugetVersion>
     <Fx3NugetVersion>3.1.16</Fx3NugetVersion>
     <Fx8NugetVersion>8.0.0</Fx8NugetVersion>
+    <Fx10NugetVersion>10.0.0</Fx10NugetVersion>
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
